@@ -61,8 +61,8 @@ export function Header({ onSearch }: HeaderProps) {
       <div className="flex items-center justify-between gap-4 px-5 py-4">
         <div className="flex min-w-fit items-center gap-6">
           <Image src="/meta-rtc-logo.png" width={120} height={70} alt="Globe RTC" />
-          <HeaderNav except={SOCIAL_PATHS} />
           <CreateRoom />
+          <HeaderNav except={SOCIAL_PATHS} />
         </div>
         <div className="flex items-center gap-2">
           {isRoomRoute && (
