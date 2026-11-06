@@ -49,6 +49,8 @@ export async function prepareTemplateMap(raw: unknown): Promise<TemplateMapData 
   const drawables: TemplateDrawable[] = [];
   const groundCells = new Set<string>();
   const anyArtCells = new Set<string>();
+  // Wall pieces are solid: players cannot stand inside them (they would be cut in half by the wall rows sorted by Y).
+  const wallCells = new Set<string>();
 
   for (const entry of loaded) {
     if (!entry) continue;
@@ -61,6 +63,7 @@ export async function prepareTemplateMap(raw: unknown): Promise<TemplateMapData 
         const key = cellKey(rec.x + dx, rec.y + item.cellDy + dy);
         anyArtCells.add(key);
         if (floorLayers.has(layer.id)) groundCells.add(key);
+        if (layer.id === "wall" && !rec.flat) wallCells.add(key);
       }
     }
 
@@ -83,6 +86,10 @@ export async function prepareTemplateMap(raw: unknown): Promise<TemplateMapData 
 
   const collision = parsed.records.filter((rec) => rec.kind === "collision" && layerById.get(rec.layer)?.type === "collision");
   const collisionCells = collision.map((rec): [number, number] => [rec.x, rec.y]);
+  for (const key of wallCells) {
+    const [x, y] = key.split(",").map(Number);
+    collisionCells.push([x, y]);
+  }
   const blocked = new Set(collisionCells.map(([x, y]) => cellKey(x, y)));
 
   // No layer marked as floor: every painted cell counts as ground, so old or half-made maps still work.
