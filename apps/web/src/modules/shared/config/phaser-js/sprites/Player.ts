@@ -58,6 +58,13 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     this.createAnimations();
 
+    // The wanted sheet is not in memory yet (it was not known when the game loaded): fetch it, the ghost shows meanwhile.
+    if (active !== skin) {
+      loadSkin(scene, skin, () => {
+        if (this.skin === skin) this.applySkin(skin);
+      });
+    }
+
     this.cursors = this.scene.input.keyboard!.addKeys({
       up: Phaser.Input.Keyboard.KeyCodes.W,
       down: Phaser.Input.Keyboard.KeyCodes.S,

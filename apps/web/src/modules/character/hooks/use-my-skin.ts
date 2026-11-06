@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getMySkin } from "../services/character";
-import { skinFromSavedUrl } from "@/modules/room/lib/skin-assets";
+import { skinFromSavedUrl } from "@/modules/room/lib/skin-key";
 
 export const MY_SKIN_KEY = ["my-skin"] as const;
 

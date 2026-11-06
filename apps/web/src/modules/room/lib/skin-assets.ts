@@ -1,11 +1,10 @@
 import * as Phaser from "phaser";
+import { FALLBACK_SKIN, isCustomSkin, skinSheetUrl } from "./skin-key";
 
 // Players are drawn with the character their owner built in the Character page: a spritesheet saved on the server.
-// A skin is the string `u:<file id>:<version>` (the version changes on every update so the new sheet is loaded).
-// Players without a custom character use the "ghost" sprite (the same look as invisibility mode) until they create one.
-export const FALLBACK_SKIN = "ghost";
+// Players without a custom character use the "ghost" sprite until they create one. Pure helpers live in skin-key.ts.
+export { FALLBACK_SKIN, isCustomSkin, skinFromSavedUrl } from "./skin-key";
 
-const CUSTOM_SKIN = /^u:([A-Za-z0-9_-]{1,40}):(\d{1,16})$/;
 const FRAME_WIDTH = 32;
 const FRAME_HEIGHT = 64;
 const FRAMES_PER_DIRECTION = 6;
@@ -16,19 +15,6 @@ const SHEET_ROWS = { idle: 0, walk: 1 } as const;
 
 export type SkinDirection = (typeof SHEET_DIRECTIONS)[number];
 export type SkinMotion = keyof typeof SHEET_ROWS;
-
-export const isCustomSkin = (skin: string) => CUSTOM_SKIN.test(skin);
-
-/** The skin string for a saved character: `url` is what GET /skin/me returns (`/skin/file/<id>.png?v=<version>`). */
-export function skinFromSavedUrl(url: string | null | undefined): string {
-  const match = /\/skin\/file\/([A-Za-z0-9_-]+)\.png\?v=(\d+)/.exec(url ?? "");
-  return match ? `u:${match[1]}:${match[2]}` : FALLBACK_SKIN;
-}
-
-function sheetUrl(skin: string) {
-  const match = CUSTOM_SKIN.exec(skin);
-  return match ? `/backend/skin/file/${match[1]}.png?v=${match[2]}` : null;
-}
 
 /** Phaser texture to show for a skin (custom: the whole sheet, ghost: its own idle/walk sheets). */
 export const skinTextureKey = (skin: string, motion: SkinMotion) => (isCustomSkin(skin) ? skin : `${skin}-${motion}`);
@@ -62,7 +48,7 @@ export function createSkinAnimations(scene: Phaser.Scene, skin: string) {
 
 /** Adds the sheet of a custom skin to the loader (use inside preload, or call loadSkin later). */
 export function queueSkinLoad(scene: Phaser.Scene, skin: string) {
-  const url = sheetUrl(skin);
+  const url = skinSheetUrl(skin);
   if (url && !scene.textures.exists(skin)) scene.load.spritesheet(skin, url, { frameWidth: FRAME_WIDTH, frameHeight: FRAME_HEIGHT });
 }
 
