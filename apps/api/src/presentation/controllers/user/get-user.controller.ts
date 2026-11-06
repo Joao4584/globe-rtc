@@ -1,4 +1,5 @@
 import { Controller, Get, Patch, Body } from '@nestjs/common';
+import { parseSkinSelection } from '@/application/skin/skin-selection';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { User } from '@/presentation/decorators/user.decorator';
 import { User as UserEntity } from '@/infrastructure/entities/user.entity';
@@ -30,8 +31,22 @@ export class GetUserController {
         avatar_url: user.avatar_url,
         public_id: user.public_id,
         character_key: user.character_key,
+        skin: user.skin ?? null,
       },
     };
+  }
+
+  // Saves the character built in the Character page. The selection is checked against the installed pieces.
+  @Patch('skin')
+  @ApiOperation({ summary: 'Save the character (skin selection) of the current user' })
+  @ApiResponse({ status: 200, description: '{ data: { skin } }' })
+  async updateSkin(@Body() body: { selection?: unknown }, @User() user: UserEntity) {
+    if (!user) {
+      throw AppErrors.unauthorized('Usuário não autenticado');
+    }
+    const selection = await parseSkinSelection(body?.selection);
+    const updated = await this.usersRepository.update(user.id, { skin: { ...selection } });
+    return { data: { skin: updated.skin ?? null } };
   }
 
   @Patch('character')

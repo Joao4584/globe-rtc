@@ -70,6 +70,10 @@ export class User {
   @Column({ name: 'character_key', type: 'varchar', length: 15, nullable: true })
   character_key?: string;
 
+  /** The character the user built in the Character page (a `SkinSelection` of @globe-rtc/skin-generator). Null until they create one. */
+  @Column({ name: 'skin', type: 'jsonb', nullable: true })
+  skin?: Record<string, unknown> | null;
+
   @CreateDateColumn({ name: 'created_at' })
   created_at: Date;
 
