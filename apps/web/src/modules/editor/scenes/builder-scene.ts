@@ -13,7 +13,7 @@ const BAND_OFFSET = 500_000;
 const FLAT_OFFSET = 400_000;
 const TOP_DEPTH = 9_000_000_000;
 const COLLISION_COLOR = 0xef4444;
-const PROTECTED = ["floor", "wall"];
+const PROTECTED = ["floor", "wall", "wall-top"];
 
 export type CursorTile = { x: number; y: number } | null;
 
@@ -570,7 +570,11 @@ export class BuilderScene extends Phaser.Scene implements BuilderController {
     const defaults = this.options.defaultLayers.filter(isProtectedLayer);
     let at = 0;
     for (const layer of defaults) {
-      if (!result.some((item) => item.id === layer.id)) result.splice(at, 0, { ...layer });
+      if (!result.some((item) => item.id === layer.id)) {
+        // Wall (top) goes above every other art layer, just before the collision layers.
+        const top = layer.id === "wall-top" ? result.findIndex((item) => item.type === "collision") : -1;
+        result.splice(layer.id === "wall-top" ? (top < 0 ? result.length : top) : at, 0, { ...layer });
+      }
       at = result.findIndex((item) => item.id === layer.id) + 1;
     }
     return result;

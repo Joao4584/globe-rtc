@@ -19,10 +19,10 @@ export type MapLayer = {
 // Layers listed bottom to top (the last one is drawn on top).
 export type LayerState = { layers: MapLayer[]; activeId: string };
 
-export type LayerNames = { floor: string; wall: string; objects: string; collision: string };
+export type LayerNames = { floor: string; wall: string; wallTop: string; objects: string; collision: string };
 
 // Every map has a Floor (where players walk and spawn) and a Wall layer; they cannot be removed. Objects and the rest can.
-export const PROTECTED_LAYER_IDS = ["floor", "wall"];
+export const PROTECTED_LAYER_IDS = ["floor", "wall", "wall-top"];
 export const isProtectedLayer = (layer: Pick<MapLayer, "id">) => PROTECTED_LAYER_IDS.includes(layer.id);
 
 // A new map starts with floor, wall, objects (sorted with players by y) and collision.
@@ -30,8 +30,9 @@ export function defaultLayers(names: LayerNames): MapLayer[] {
   const base = { visible: true, locked: false };
   return [
     { id: "floor", name: names.floor, type: "art", mode: "below", floor: true, ...base },
-    { id: "wall", name: names.wall, type: "art", mode: "ysort", ...base },
+    { id: "wall", name: names.wall, type: "art", mode: "below", ...base },
     { id: "objects", name: names.objects, type: "art", mode: "ysort", ...base },
+    { id: "wall-top", name: names.wallTop, type: "art", mode: "above", ...base },
     { id: "collision", name: names.collision, type: "collision", mode: "below", ...base },
   ];
 }
@@ -51,13 +52,13 @@ export interface LayerController {
 
 // What each layer takes: Floor only floor pieces, Wall only wall pieces (borders go with both), any other art layer only
 // objects and animated objects. Collision layers take no pieces (they paint cells).
-export type LayerAccepts = "floor" | "wall" | "objects";
-export const layerAccepts = (layer: Pick<MapLayer, "id">): LayerAccepts => (layer.id === "floor" ? "floor" : layer.id === "wall" ? "wall" : "objects");
+export type LayerAccepts = "floor" | "wall" | "wallTop" | "objects";
+export const layerAccepts = (layer: Pick<MapLayer, "id">): LayerAccepts => (layer.id === "floor" ? "floor" : layer.id === "wall" ? "wall" : layer.id === "wall-top" ? "wallTop" : "objects");
 
 export function acceptsKind(layer: Pick<MapLayer, "id" | "type">, kind: ItemKind): boolean {
   if (layer.type === "collision") return false;
   const accepts = layerAccepts(layer);
   if (accepts === "floor") return kind === "floor" || kind === "border";
-  if (accepts === "wall") return kind === "wall" || kind === "border";
+  if (accepts === "wall" || accepts === "wallTop") return kind === "wall" || kind === "border";
   return kind === "object" || kind === "animated";
 }

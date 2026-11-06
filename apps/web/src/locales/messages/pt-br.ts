@@ -112,11 +112,13 @@ export default {
           accepts: {
             floor: "Aceita: chao e bordas",
             wall: "Aceita: paredes e bordas",
+            wallTop: "Aceita: paredes e bordas (sempre acima do personagem)",
             objects: "Aceita: objetos e objetos animados",
           },
           newCollisionName: "Colisao",
           defaultFloor: "Chao",
           defaultWall: "Parede",
+          defaultWallTop: "Parede (topo)",
           defaultObjects: "Objetos",
           defaultCollision: "Colisao",
           modeBelow: "Abaixo dos jogadores",

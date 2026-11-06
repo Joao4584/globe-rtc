@@ -41,6 +41,7 @@ export default function Page() {
       defaultLayers({
         floor: t("dashboard.editor.builder.layers.defaultFloor"),
         wall: t("dashboard.editor.builder.layers.defaultWall"),
+        wallTop: t("dashboard.editor.builder.layers.defaultWallTop"),
         objects: t("dashboard.editor.builder.layers.defaultObjects"),
         collision: t("dashboard.editor.builder.layers.defaultCollision"),
       }),

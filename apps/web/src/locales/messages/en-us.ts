@@ -112,11 +112,13 @@ export default {
           accepts: {
             floor: "Takes: floors and borders",
             wall: "Takes: walls and borders",
+            wallTop: "Takes: walls and borders (always over the player)",
             objects: "Takes: objects and animated objects",
           },
           newCollisionName: "Collision",
           defaultFloor: "Floor",
           defaultWall: "Wall",
+          defaultWallTop: "Wall (top)",
           defaultObjects: "Objects",
           defaultCollision: "Collision",
           modeBelow: "Below players",
