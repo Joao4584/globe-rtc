@@ -198,11 +198,34 @@ function bakeLayer(scene: Phaser.Scene, layerKey: string, drawables: TemplateDra
 
 const BLANK_KEY = "tpl-blank";
 
+// Animated objects are never baked (a baked layer is a still picture): each one is its own image playing a looping
+// animation made of the frames of its strip, with the delay of every frame from the manifest.
+function addAnimated(scene: Phaser.Scene, drawable: TemplateDrawable) {
+  const animation = drawable.item.animation;
+  if (!animation) return;
+  const textureKey = `tpl-strip:${itemKey(drawable.item)}`;
+  const animKey = `tpl-anim:${itemKey(drawable.item)}`;
+  if (!scene.textures.exists(textureKey)) {
+    const texture = scene.textures.addCanvas(textureKey, animation.strip);
+    if (texture) for (let i = 0; i < animation.frames; i++) texture.add(i, 0, i * animation.frameW, 0, animation.frameW, drawable.item.height);
+  }
+  if (!scene.anims.exists(animKey)) {
+    scene.anims.create({
+      key: animKey,
+      frames: animation.delays.slice(0, animation.frames).map((duration, frame) => ({ key: textureKey, frame, duration })),
+      repeat: -1,
+    });
+  }
+  scene.add.sprite(drawable.x, drawable.y, textureKey, 0).setOrigin(0, 0).setDepth(drawable.depth).play(animKey);
+}
+
 // Adds the map to a scene: pictures, an invisible static body per collision cell. Returns the collider group.
 export function buildTemplateMapInScene(scene: Phaser.Scene, map: TemplateMapData) {
   const flat = new Map<number, TemplateDrawable[]>();
   for (const drawable of map.drawables) {
-    if (drawable.mode === "ysort") {
+    if (drawable.item.animation) {
+      addAnimated(scene, drawable);
+    } else if (drawable.mode === "ysort") {
       const key = `tpl:${itemKey(drawable.item)}`;
       if (!scene.textures.exists(key)) scene.textures.addCanvas(key, drawable.item.canvas);
       scene.add.image(drawable.x, drawable.y, key).setOrigin(0, 0).setDepth(drawable.depth);
