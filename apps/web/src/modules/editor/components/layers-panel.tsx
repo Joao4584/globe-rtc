@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { ChevronDown, ChevronUp, Eye, EyeOff, Lock, Plus, Square, Trash2, Unlock } from "lucide-react";
 import { useI18n } from "@/locales/client";
 import { cn } from "@/modules/shared/utils";
-import { isProtectedLayer, layerAccepts, type LayerController, type LayerMode, type LayerState, type MapLayer } from "../assets/map-layers";
+import { isProtectedLayer, layerAccepts, type LayerController, type LayerState, type MapLayer } from "../assets/map-layers";
 import { ui } from "../ui/theme";
 
 type LayersPanelProps = {
@@ -17,12 +17,6 @@ export function LayersPanel({ state, controller }: LayersPanelProps) {
   const t = useI18n();
   const [renaming, setRenaming] = useState<string | null>(null);
   const top = state.layers.length - 1;
-
-  const modeLabel: Record<LayerMode, string> = {
-    below: t("dashboard.editor.builder.layers.modeBelow"),
-    ysort: t("dashboard.editor.builder.layers.modeYSort"),
-    above: t("dashboard.editor.builder.layers.modeAbove"),
-  };
 
   const remove = (layer: MapLayer) => {
     if (window.confirm(t("dashboard.editor.builder.layers.removeConfirm", { name: layer.name }))) controller.removeLayer(layer.id);
@@ -118,19 +112,6 @@ export function LayersPanel({ state, controller }: LayersPanelProps) {
                   </button>
                 )}
               </div>
-              {layer.type === "art" ? (
-                <select
-                  value={layer.mode}
-                  onChange={(event) => controller.updateLayer(layer.id, { mode: event.target.value as LayerMode })}
-                  className={cn("ml-1 mt-1 h-6 w-[calc(100%-0.25rem)] px-1 !text-xs", ui.field)}
-                >
-                  {(Object.keys(modeLabel) as LayerMode[]).map((mode) => (
-                    <option key={mode} value={mode}>
-                      {modeLabel[mode]}
-                    </option>
-                  ))}
-                </select>
-              ) : null}
               {layer.type === "art" ? (
                 <p className={cn("ml-1 mt-0.5 text-[10px] leading-tight", ui.muted)}>
                   {t(`dashboard.editor.builder.layers.accepts.${layerAccepts(layer)}` as "dashboard.editor.builder.layers.accepts.floor")}
