@@ -8,6 +8,8 @@ import { toast } from "sonner";
 import { AlertCircle, Share2 } from "lucide-react";
 import Image from "next/image";
 import { FriendsHeaderButton } from "@/modules/friends/components/friends-header/friends-header-button";
+import { CreateRoom } from "@/modules/rooms/components/create-room/create-room";
+import { HeaderNav } from "./header-nav";
 import UserProfileHeader from "@/modules/profile/components/layout/profile/profile-header";
 
 interface HeaderProps {
@@ -54,8 +56,9 @@ export function Header({ onSearch }: HeaderProps) {
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-card/70">
       <div className="flex items-center justify-between gap-4 px-5 py-4">
-        <div className="flex min-w-fit items-center gap-2">
+        <div className="flex min-w-fit items-center gap-6">
           <Image src="/meta-rtc-logo.png" width={120} height={70} alt="Globe RTC" />
+          <HeaderNav />
         </div>
         <div className="flex items-center gap-2">
           {isRoomRoute && (
@@ -64,6 +67,7 @@ export function Header({ onSearch }: HeaderProps) {
               {t("dashboard.header.share")}
             </Button>
           )}
+          <CreateRoom />
           <FriendsHeaderButton />
           <UserProfileHeader />
         </div>

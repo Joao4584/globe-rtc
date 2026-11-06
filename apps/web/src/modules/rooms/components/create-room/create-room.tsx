@@ -17,7 +17,6 @@ import {
 import { Input } from "@/modules/shared/ui/input";
 import { Label } from "@/modules/shared/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/modules/shared/ui/select";
-import { useSidebarSizeStore } from "@/modules/workspace/stores/sidebar-size.store";
 import { useMapTemplates } from "@/modules/editor/hooks/use-map-templates";
 import { createRoom } from "../../services/create-room";
 import { DetailsRoom, type DetailsRoomHandle } from "../details-room/details-room";
@@ -25,7 +24,6 @@ import { DetailsRoom, type DetailsRoomHandle } from "../details-room/details-roo
 export function CreateRoom() {
   const t = useI18n();
   const queryClient = useQueryClient();
-  const minimized = useSidebarSizeStore((state) => state.minimized);
   const detailsRoomRef = useRef<DetailsRoomHandle>(null);
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -113,11 +111,12 @@ export function CreateRoom() {
     >
       <DialogTrigger asChild>
         <Button
-          className="w-5/6 text-white bg-gradient-to-r from-[#1a2f47] via-[#02276B] to-[#a8601d] bg-[length:200%_200%]
+          size="sm"
+          className="text-white bg-gradient-to-r from-[#1a2f47] via-[#02276B] to-[#a8601d] bg-[length:200%_200%]
             transition-[background-position] duration-700 ease-in-out hover:bg-[position:100%_50%]"
         >
           <Plus className=" h-4 w-4" />
-          {minimized ? null : t("dashboard.createRoom.triggerNew")}
+          {t("dashboard.createRoom.triggerNew")}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-xl">

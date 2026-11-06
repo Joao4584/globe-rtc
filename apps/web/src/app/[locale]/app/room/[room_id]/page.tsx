@@ -2,8 +2,6 @@
 
 import { useParams } from "next/navigation";
 import { useDetailRoom } from "@/modules/rooms/hooks/use-detail-room";
-import { useSidebarSizeStore } from "@/modules/workspace/stores/sidebar-size.store";
-import { useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import RoomPage from "@/modules/room/room";
@@ -11,7 +9,6 @@ import { RoomLoading } from "./loading-state";
 import { RoomNotFound } from "./room-not-found";
 
 export default function Page() {
-  const setMinimized = useSidebarSizeStore((state) => state.setMinimized);
   const params = useParams<{
     room_id?: string | string[];
     locale?: string | string[];
@@ -19,14 +16,6 @@ export default function Page() {
   const roomId = Array.isArray(params.room_id) ? params.room_id[0] : params.room_id;
   const locale = Array.isArray(params.locale) ? params.locale[0] : params.locale;
   const homeHref = locale ? `/${locale}/app` : "/app";
-
-  useEffect(() => {
-    setMinimized(true);
-
-    return () => {
-      setMinimized(false);
-    };
-  }, []);
 
   const { data, isLoading } = useDetailRoom(roomId ?? null);
 
