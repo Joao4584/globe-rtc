@@ -8,6 +8,7 @@ import { Friends } from './src/infrastructure/entities/friends.entity';
 import { RoomFavorite } from './src/infrastructure/entities/room-favorite.entity';
 import { UploadFile } from './src/infrastructure/entities/upload-file.entity';
 import { SupportRequest } from './src/infrastructure/entities/support-request.entity';
+import { MapTemplate } from './src/infrastructure/entities/map-template.entity';
 
 export default new DataSource({
   type: 'postgres',
@@ -27,6 +28,7 @@ export default new DataSource({
     Friends,
     UploadFile,
     SupportRequest,
+    MapTemplate,
   ],
   migrations: ['./src/infrastructure/migrations/*.ts'],
   synchronize: false,
