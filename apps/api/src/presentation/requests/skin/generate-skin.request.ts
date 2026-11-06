@@ -49,13 +49,13 @@ export class GenerateSkinRequest {
   @IsIn(SkinFormats, { message: 'The `format` field must be one of the following values: image, json.' })
   format?: (typeof SkinFormats)[number];
 
-  @ApiPropertyOptional({ enum: ['true', 'false'], default: 'false', description: 'Return the idle + walk spritesheet (24 frames each: 6 per direction, rows idle then walk) instead of the 4-pose preview.' })
+  @ApiPropertyOptional({ enum: ['true', 'false'], default: 'false', description: 'Return the complete spritesheet (rows idle, walk, sit, throw, punch, hurt) instead of the 4-pose preview.' })
   @IsOptional()
   @IsIn(['true', 'false'], { message: 'The `sheet` field must be true or false.' })
   sheet?: string;
 
   @ApiPropertyOptional({
-    description: 'With `sheet=true`: comma separated animations to put in the spritesheet, one row each in this order: idle,walk,sit,throw,punch,hurt. Defaults to idle,walk.',
+    description: 'With `sheet=true`: comma separated animations to put in the spritesheet, one row each in this order: idle,walk,sit,throw,punch,hurt. Defaults to all six: idle,walk,sit,throw,punch,hurt.',
     example: 'idle,walk,sit,throw,punch,hurt',
   })
   @IsOptional()

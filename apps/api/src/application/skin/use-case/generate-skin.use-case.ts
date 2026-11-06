@@ -5,8 +5,8 @@ import { AppErrors } from '@/presentation/errors';
 
 /** The preview is always returned at its real size (1x); the front scales it. */
 const SKIN_SCALE = 1;
-/** The animations that go into the spritesheet when `sheet=true` and none are asked for (the rest of the pack's sheet is not exposed). */
-const DEFAULT_SHEET_ANIMATIONS: SkinAnimation[] = ['idle', 'walk'];
+/** The animations that go into the spritesheet when `sheet=true` and none are asked for: all of them, in this row order. */
+const DEFAULT_SHEET_ANIMATIONS: SkinAnimation[] = ['idle', 'walk', 'sit', 'throw', 'punch', 'hurt'];
 /** Every request rolls with a fresh 4-digit seed (1000-9999). */
 const SEED_MIN = 1000;
 const SEED_MAX = 9999;
@@ -19,7 +19,7 @@ export interface GenerateSkinInput {
   current?: Partial<SkinSelection>;
   /** Returns the spritesheet. */
   includeSpritesheet: boolean;
-  /** Which animations go into the spritesheet, top to bottom. Defaults to idle + walk. Names are validated by the skin package. */
+  /** Which animations go into the spritesheet, top to bottom. Defaults to all six. Names are validated by the skin package. */
   animations?: SkinAnimation[];
 }
 

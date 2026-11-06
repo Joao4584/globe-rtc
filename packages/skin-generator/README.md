@@ -11,7 +11,7 @@ como PNG.
 ```ts
 import { generateSkin } from "@globe-rtc/skin-generator";
 
-// Sorteia só roupa e cabelo, mantendo o resto da skin atual, e devolve o idle + walk.
+// Sorteia só roupa e cabelo, mantendo o resto da skin atual, e devolve a spritesheet completa.
 const skin = await generateSkin({
   parts: ["outfit", "hairstyle"], // o que sortear
   current: skinAtual, // o que manter (opcional)
@@ -22,7 +22,7 @@ const skin = await generateSkin({
 skin.selection; // id de cada peça escolhida (é isto que vale a pena guardar)
 skin.seed; // semente do sorteio
 skin.preview; // PNG (Buffer) com as 4 poses paradas
-skin.spritesheet; // PNG (Buffer) com idle + walk
+skin.spritesheet; // PNG (Buffer) com as seis animações (ou as pedidas em `animations`)
 skin.animationLayout; // como ler o spritesheet (tamanho do quadro, direções, linhas)
 ```
 
