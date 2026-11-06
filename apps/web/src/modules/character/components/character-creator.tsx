@@ -238,12 +238,6 @@ export function CharacterCreator() {
             );
           })}
 
-          <div className="-skew-x-12 border border-border bg-card px-5 py-2 text-muted-foreground">
-            <p className="skew-x-12 text-sm font-semibold">
-              {label("name")}: <span className="text-foreground">{user?.name ?? ""}</span>
-            </p>
-          </div>
-
           <button
             type="button"
             onClick={() => void randomize()}
@@ -262,15 +256,6 @@ export function CharacterCreator() {
             ) : (
               <Loader2 className="mb-32 h-6 w-6 animate-spin text-muted-foreground" />
             )}
-          </div>
-          <div className="h-10 w-56 rounded-md border border-border bg-card/60" />
-          <div className="flex items-center gap-2">
-            <button type="button" onClick={() => rotate(-1)} className="rounded-full border border-border bg-card p-2 text-foreground hover:bg-accent" aria-label={label("rotateLeft")}>
-              <RotateCcw className="h-4 w-4" />
-            </button>
-            <button type="button" onClick={() => rotate(1)} className="rounded-full border border-border bg-card p-2 text-foreground hover:bg-accent" aria-label={label("rotateRight")}>
-              <RotateCw className="h-4 w-4" />
-            </button>
           </div>
         </div>
 
