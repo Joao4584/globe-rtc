@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Check, Dices, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, Dices, Loader2, RotateCcw, RotateCw } from "lucide-react";
 import { useI18n } from "@/locales/client";
 import { cn } from "@/modules/shared/utils";
 import {
@@ -105,6 +105,7 @@ export function CharacterCreator() {
   const [selection, setSelection] = useState<SkinSelection | null>(null);
   const [rendered, setRendered] = useState<RenderedSkin | null>(null);
   const [animation, setAnimation] = useState<string>("idle");
+  const [direction, setDirection] = useState("down");
   const [failed, setFailed] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -184,6 +185,11 @@ export function CharacterCreator() {
   const availableAnimations = rendered ? ANIMATIONS.filter((name) => rendered.layout.animations.some((item) => item.name === name)) : ANIMATIONS;
   const shownAnimation = availableAnimations.includes(animation as (typeof ANIMATIONS)[number]) ? animation : "idle";
 
+  // Turn the character: the directions come from the animation (sitting only has right and left).
+  const directions = rendered?.layout.animations.find((item) => item.name === shownAnimation)?.directions ?? ["down"];
+  const shownDirection = directions.includes(direction) ? direction : directions[0];
+  const rotate = (delta: number) => setDirection(directions[(directions.indexOf(shownDirection) + delta + directions.length) % directions.length]);
+
   const rows = useMemo(() => {
     if (!catalog || !selection) return [];
     return PARTS.filter((part) => groupsOf(catalog, selection.type, part).length > 0);
@@ -245,12 +251,20 @@ export function CharacterCreator() {
       </Panel>
 
       {/* the character */}
-      <Panel className="flex min-h-[420px] items-center justify-center">
+      <Panel className="flex min-h-[420px] flex-col items-center justify-center gap-6">
         {rendered ? (
-          <SkinPreview sheet={rendered.spritesheet} layout={rendered.layout} animation={shownAnimation} direction="down" scale={5} />
+          <SkinPreview sheet={rendered.spritesheet} layout={rendered.layout} animation={shownAnimation} direction={shownDirection} scale={5} />
         ) : (
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         )}
+        <div className="flex items-center gap-2">
+          <button type="button" onClick={() => rotate(-1)} className="rounded-md border border-border bg-background/60 p-2 text-foreground transition hover:bg-accent" aria-label={label("rotateLeft")}>
+            <RotateCcw className="h-4 w-4" />
+          </button>
+          <button type="button" onClick={() => rotate(1)} className="rounded-md border border-border bg-background/60 p-2 text-foreground transition hover:bg-accent" aria-label={label("rotateRight")}>
+            <RotateCw className="h-4 w-4" />
+          </button>
+        </div>
       </Panel>
 
       {/* which animation to see, random, and finish */}
