@@ -112,6 +112,8 @@ export default {
           open: "Paleta",
           drop: "Soltar item (Esc)",
           tabObjects: "Objetos",
+          tabAnimated: "Objetos animados",
+          animatedHint: "Clique para pegar. No mapa, passe o mouse sobre o objeto para ver a animacao.",
           tabWalls: "Paredes",
           tabFloors: "Chao",
           tabBorders: "Bordas",

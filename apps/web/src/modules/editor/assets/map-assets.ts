@@ -4,8 +4,8 @@
 
 export const TILE = 32;
 
-// object = one picture of the atlas; wall / floor / border = one 32px cell of the matching Room Builder sheet.
-export type ItemKind = "object" | SheetKind;
+// object = one picture of the atlas; animated = an animated object (the editor shows its first frame); wall / floor / border = one 32px cell of the matching Room Builder sheet.
+export type ItemKind = "object" | "animated" | SheetKind;
 export type ItemLayer = "floor" | "wall" | "object";
 
 // A drawable thing the creator can place. `offsetX/Y` is where the art starts inside its first tile cell.
@@ -22,6 +22,8 @@ export type MapItem = {
   tilesH: number;
   /** rows the art extends above the cell it is placed on (objects are anchored by their base) */
   cellDy: number;
+  /** animated objects: every frame side by side (the canvas above is frame 0) */
+  animation?: { strip: HTMLCanvasElement; frames: number; frameW: number; delays: number[] };
 };
 
 // What follows the mouse: items laid out in tile offsets from the cursor cell.
@@ -69,6 +71,7 @@ const itemCache = new Map<string, Promise<MapItem>>();
 
 export function getItem(kind: ItemKind, id: string): Promise<MapItem> {
   if (kind === "object") return getObjectItem(id);
+  if (kind === "animated") return getAnimatedItem(id);
   if (kind === "wall" || kind === "floor" || kind === "border") return getSheetTileItem(kind, id);
   return Promise.reject(new Error(`Unknown item kind ${kind}`));
 }
@@ -173,4 +176,53 @@ export async function brushFromSheetRect(kind: SheetKind, col0: number, row0: nu
     }
   }
   return items.length ? { items, width: col1 - col0 + 1, height: row1 - row0 + 1 } : null;
+}
+
+// ---- animated objects (strips of frames, manifest built by scripts/assets/build-animated-manifest.mjs) ----
+const ANIMATED_MANIFEST_URL = "/tiles/atlas/animated/animated.json";
+export type AnimatedEntry = { id: string; n: number; name: string; w: number; h: number; frames: number; delays: number[]; review?: boolean };
+export type AnimatedManifest = { sheetDir: string; objects: AnimatedEntry[] };
+
+export const loadAnimatedManifest = () => loadJson<AnimatedManifest>(ANIMATED_MANIFEST_URL);
+export const animatedSheetUrl = (manifest: AnimatedManifest, id: string) => `${manifest.sheetDir}/${id}.png`;
+
+// Same anchoring as objects (clicked cell = bottom-left cell). Frame 0 is drawn; the game will play the rest.
+export function getAnimatedItem(id: string): Promise<MapItem> {
+  const key = `animated:${id}`;
+  let cached = itemCache.get(key);
+  if (!cached) {
+    cached = (async () => {
+      const manifest = await loadAnimatedManifest();
+      const entry = manifest.objects.find((object) => object.id === id);
+      if (!entry) throw new Error(`Unknown animated object ${id}`);
+      const sheet = await loadImage(animatedSheetUrl(manifest, id));
+      const canvas = newCanvas(entry.w, entry.h);
+      canvas.getContext("2d")!.drawImage(sheet, 0, 0, entry.w, entry.h, 0, 0, entry.w, entry.h);
+      // All frames side by side, so the scene can play them (hover in the editor, always on in the game).
+      const strip = newCanvas(entry.w * entry.frames, entry.h);
+      strip.getContext("2d")!.drawImage(sheet, 0, 0, strip.width, strip.height, 0, 0, strip.width, strip.height);
+      const tilesH = Math.ceil(entry.h / TILE);
+      return {
+        animation: { strip, frames: entry.frames, frameW: entry.w, delays: entry.delays },
+        kind: "animated",
+        id,
+        layer: "object",
+        canvas,
+        width: entry.w,
+        height: entry.h,
+        offsetX: 0,
+        offsetY: TILE - entry.h,
+        tilesW: Math.ceil(entry.w / TILE),
+        tilesH,
+        cellDy: -(tilesH - 1),
+      } satisfies MapItem;
+    })();
+    itemCache.set(key, cached);
+  }
+  return cached;
+}
+
+export async function brushFromAnimated(id: string): Promise<Brush> {
+  const item = await getAnimatedItem(id);
+  return { items: [{ item, dx: 0, dy: 0 }], width: item.tilesW, height: 1 };
 }

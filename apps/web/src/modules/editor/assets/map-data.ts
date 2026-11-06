@@ -18,8 +18,8 @@ export type MapData = {
 // A placed thing as the editor scene tracks it; `seq` is the placement order.
 export type PlacedRecord = { kind: ItemKind | "collision"; id: string; x: number; y: number; layer: string; seq: number };
 
-const KIND_PREFIX: Record<ItemKind, string> = { object: "o", wall: "w", floor: "f", border: "b" };
-const PREFIX_KIND: Record<string, ItemKind> = { o: "object", w: "wall", f: "floor", b: "border" };
+const KIND_PREFIX: Record<ItemKind, string> = { object: "o", animated: "a", wall: "w", floor: "f", border: "b" };
+const PREFIX_KIND: Record<string, ItemKind> = { o: "object", a: "animated", w: "wall", f: "floor", b: "border" };
 
 // Size in tiles of a placed record, for the bounds (the real size lives in the atlas, so the base cell is used).
 function footprint(_rec: PlacedRecord) {
@@ -115,7 +115,7 @@ export function parseMap(raw: unknown): ParsedMap | null {
     const records: ParsedMap["records"] = [];
     for (const { rec } of ordered) {
       if (!isRecord(rec) || !isNumber(rec.x) || !isNumber(rec.y) || typeof rec.id !== "string") continue;
-      const kind = rec.kind === "collision" || rec.kind === "object" || rec.kind === "wall" || rec.kind === "floor" || rec.kind === "border" ? rec.kind : null;
+      const kind = rec.kind === "collision" || rec.kind === "object" || rec.kind === "animated" || rec.kind === "wall" || rec.kind === "floor" || rec.kind === "border" ? rec.kind : null;
       if (kind) records.push({ kind, id: rec.id, x: rec.x, y: rec.y, layer: typeof rec.layer === "string" ? rec.layer : "" });
     }
     return {

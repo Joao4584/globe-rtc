@@ -112,6 +112,8 @@ export default {
           open: "Palette",
           drop: "Drop item (Esc)",
           tabObjects: "Objects",
+          tabAnimated: "Animated objects",
+          animatedHint: "Click to pick. On the map, hover an object to see it animate.",
           tabWalls: "Walls",
           tabFloors: "Floors",
           tabBorders: "Borders",

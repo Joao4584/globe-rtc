@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "test": "jest",
-    "assets:objects": "node scripts/assets/build-object-atlas.mjs --write-registry"
+    "assets:objects": "node scripts/assets/build-object-atlas.mjs --write-registry",
+    "assets:animated": "node scripts/assets/build-animated-manifest.mjs"
   },
   "dependencies": {
     "@colyseus/schema": "^3.0.42",

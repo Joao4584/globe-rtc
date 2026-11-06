@@ -8,7 +8,7 @@ const MAX_COORD = 100_000;
 const MAX_TEXT = 200;
 const LAYER_TYPES = ['art', 'collision'];
 const LAYER_MODES = ['below', 'ysort', 'above'];
-const REF_PATTERN = /^[owfb]:[A-Za-z0-9_]+$/;
+const REF_PATTERN = /^[owfba]:[A-Za-z0-9_]+$/;
 
 const isObject = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
 const isCoord = (value: unknown): value is number => typeof value === 'number' && Number.isInteger(value) && Math.abs(value) <= MAX_COORD;

@@ -7,21 +7,26 @@ import { cn } from "@/modules/shared/utils";
 import {
   SHEETS,
   TILE,
+  animatedSheetUrl,
+  brushFromAnimated,
   brushFromObject,
   brushFromSheetRect,
+  loadAnimatedManifest,
   loadObjectTheme,
   loadObjectThemes,
   objectPageUrl,
   type Brush,
+  type AnimatedManifest,
   type ObjectThemeInfo,
   type ObjectThemeManifest,
   type SheetKind,
 } from "../assets/map-assets";
 import { ui } from "../ui/theme";
 
-type Tab = "objects" | SheetKind;
-const TABS: { id: Tab; label: "tabObjects" | "tabWalls" | "tabFloors" | "tabBorders" }[] = [
+type Tab = "objects" | "animated" | SheetKind;
+const TABS: { id: Tab; label: "tabObjects" | "tabAnimated" | "tabWalls" | "tabFloors" | "tabBorders" }[] = [
   { id: "objects", label: "tabObjects" },
+  { id: "animated", label: "tabAnimated" },
   { id: "wall", label: "tabWalls" },
   { id: "floor", label: "tabFloors" },
   { id: "border", label: "tabBorders" },
@@ -67,7 +72,7 @@ export function MapPalette({ brush, onBrush }: MapPaletteProps) {
               <X className="h-4 w-4" />
             </button>
           </div>
-          {tab === "objects" ? <ObjectsTab onPick={pick} /> : <SheetTab key={tab} kind={tab} onPick={pick} />}
+          {tab === "objects" ? <ObjectsTab onPick={pick} /> : tab === "animated" ? <AnimatedTab onPick={pick} /> : <SheetTab key={tab} kind={tab} onPick={pick} />}
         </div>
       ) : null}
 
@@ -222,6 +227,73 @@ function SheetTab({ kind, onPick }: { kind: SheetKind; onPick: (brush: Brush) =>
             />
           ) : null}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// Animated objects: search by name (door, fridge...), thumbnails play their animation.
+function AnimatedTab({ onPick }: { onPick: (brush: Brush) => void }) {
+  const t = useI18n();
+  const [manifest, setManifest] = useState<AnimatedManifest | null>(null);
+  const [query, setQuery] = useState("");
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    loadAnimatedManifest().then(setManifest).catch(() => setFailed(true));
+  }, []);
+
+  const visible = useMemo(() => {
+    if (!manifest) return [];
+    const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    return manifest.objects.filter((object) => words.every((word) => object.name.toLowerCase().includes(word) || String(object.n) === word));
+  }, [manifest, query]);
+
+  if (failed) return <p className="p-4 text-sm text-rose-500 dark:text-rose-300">{t("dashboard.editor.builder.palette.loadFailed")}</p>;
+  if (!manifest) return <p className={cn("p-4 text-sm", ui.muted)}>{t("dashboard.editor.builder.palette.loading")}</p>;
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <style>{"@keyframes palette-frames { to { background-position-x: var(--frames-end); } }"}</style>
+      <div className="flex flex-wrap items-center gap-2 p-2">
+        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("dashboard.editor.builder.palette.search")} className={cn("h-8 min-w-0 flex-1 px-2", ui.field)} />
+        <p className={cn("w-full text-xs", ui.muted)}>{t("dashboard.editor.builder.palette.animatedHint")}</p>
+      </div>
+      <div className="min-h-0 flex-1 overflow-auto p-2 pt-0">
+        {visible.length === 0 ? (
+          <p className={cn("text-sm", ui.muted)}>{t("dashboard.editor.builder.palette.noResults")}</p>
+        ) : (
+          <div className="flex flex-wrap gap-1">
+            {visible.map((object) => {
+              const scale = Math.min(1, (THUMB - 8) / Math.max(object.w, object.h));
+              const total = object.delays.reduce((sum, delay) => sum + delay, 0);
+              return (
+                <button
+                  key={object.id}
+                  type="button"
+                  title={object.name}
+                  onClick={() => void brushFromAnimated(object.id).then(onPick)}
+                  className="flex shrink-0 items-center justify-center bg-[#2a2a2a] hover:bg-sky-400/30"
+                  style={{ width: THUMB, height: THUMB }}
+                >
+                  <div
+                    style={{
+                      width: object.w * scale,
+                      height: object.h * scale,
+                      backgroundImage: `url(${animatedSheetUrl(manifest, object.id)})`,
+                      backgroundSize: `${object.w * object.frames * scale}px ${object.h * scale}px`,
+                      backgroundRepeat: "no-repeat",
+                      imageRendering: "pixelated",
+                      // Steps through the frames; the real delays (some frames last longer) are played by the scene.
+                      animation: `palette-frames ${total}ms steps(${object.frames}) infinite`,
+                      ["--frames-end" as string]: `-${object.w * object.frames * scale}px`,
+                    }}
+                  />
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

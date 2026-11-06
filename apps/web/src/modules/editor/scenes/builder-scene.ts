@@ -71,6 +71,8 @@ export class BuilderScene extends Phaser.Scene implements BuilderController {
   private undoStack: Snapshot[] = [];
   private redoStack: Snapshot[] = [];
   private strokeOpen = false;
+  // Animated object under the mouse: it plays its frames while hovered and goes back to frame 0 when left.
+  private playing: { entry: Entry; frame: number; until: number } | null = null;
 
   constructor(private readonly options: BuilderSceneOptions) {
     super(BUILDER_SCENE_KEY);
@@ -217,7 +219,8 @@ export class BuilderScene extends Phaser.Scene implements BuilderController {
 
   // ---- grid and camera ----
 
-  update() {
+  update(time: number) {
+    this.stepAnimation(time);
     const view = this.cameras.main.worldView;
     const key = `${view.x}|${view.y}|${view.width}|${view.height}|${this.cameras.main.zoom}`;
     if (key === this.lastView) return;
@@ -300,6 +303,47 @@ export class BuilderScene extends Phaser.Scene implements BuilderController {
     return key;
   }
 
+  // Animated objects are drawn from a texture holding all their frames.
+  private ensureStrip(item: MapItem) {
+    const key = `strip:${itemKey(item)}`;
+    if (!this.textures.exists(key) && item.animation) {
+      const texture = this.textures.addCanvas(key, item.animation.strip);
+      if (texture) for (let i = 0; i < item.animation.frames; i++) texture.add(i, 0, i * item.animation.frameW, 0, item.animation.frameW, item.height);
+    }
+    return key;
+  }
+
+  private animatedAt(cell: CursorTile) {
+    if (!cell) return null;
+    const px = cell.x * TILE + TILE / 2;
+    const py = cell.y * TILE + TILE / 2;
+    let top: Entry | null = null;
+    for (const entry of this.entries.values()) {
+      if (!entry.item?.animation || !entry.visual.visible) continue;
+      const { x, y } = entry.visual;
+      if (px < x || px >= x + entry.item.width || py < y || py >= y + entry.item.height) continue;
+      if (!top || entry.visual.depth > top.visual.depth) top = entry;
+    }
+    return top;
+  }
+
+  private setPlaying(entry: Entry | null) {
+    if (this.playing?.entry === entry) return;
+    if (this.playing) (this.playing.entry.visual as Phaser.GameObjects.Image).setFrame(0);
+    this.playing = entry ? { entry, frame: 0, until: 0 } : null;
+  }
+
+  private stepAnimation(time: number) {
+    const playing = this.playing;
+    const animation = playing?.entry.item?.animation;
+    if (!playing || !animation) return;
+    if (time < playing.until) return;
+    const image = playing.entry.visual as Phaser.GameObjects.Image;
+    image.setFrame(playing.frame);
+    playing.until = time + (animation.delays[playing.frame] ?? 100);
+    playing.frame = (playing.frame + 1) % animation.frames;
+  }
+
   private rebuildGhost() {
     this.ghost.forEach((image) => image.destroy());
     this.ghost = [];
@@ -333,6 +377,7 @@ export class BuilderScene extends Phaser.Scene implements BuilderController {
 
     if (tile?.x === this.lastTile?.x && tile?.y === this.lastTile?.y) return;
     this.lastTile = tile;
+    this.setPlaying(this.animatedAt(tile));
     this.options.onCursorChange?.(tile);
   }
 
@@ -365,7 +410,9 @@ export class BuilderScene extends Phaser.Scene implements BuilderController {
     const key = this.entryKey(layerId, item.kind, item.id, x, y);
     this.removeEntry(key);
 
-    const visual = this.add.image(x * TILE + item.offsetX, y * TILE + item.offsetY, this.ensureTexture(item)).setOrigin(0, 0);
+    const visual = item.animation
+      ? this.add.image(x * TILE + item.offsetX, y * TILE + item.offsetY, this.ensureStrip(item), 0).setOrigin(0, 0)
+      : this.add.image(x * TILE + item.offsetX, y * TILE + item.offsetY, this.ensureTexture(item)).setOrigin(0, 0);
     const entry: Entry = { rec: { kind: item.kind, id: item.id, x, y, layer: layerId, seq }, item, visual };
     this.register(key, entry);
   }
@@ -388,6 +435,7 @@ export class BuilderScene extends Phaser.Scene implements BuilderController {
   private removeEntry(key: string) {
     const entry = this.entries.get(key);
     if (!entry) return false;
+    if (this.playing?.entry === entry) this.playing = null;
     entry.visual.destroy();
     this.entries.delete(key);
     return true;
@@ -445,6 +493,7 @@ export class BuilderScene extends Phaser.Scene implements BuilderController {
   }
 
   private applySnapshot(snapshot: Snapshot) {
+    this.playing = null;
     for (const entry of this.entries.values()) entry.visual.destroy();
     this.entries.clear();
     this.layers = snapshot.layers.map((layer) => ({ ...layer }));
