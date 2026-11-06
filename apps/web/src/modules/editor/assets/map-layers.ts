@@ -30,7 +30,7 @@ export function defaultLayers(names: LayerNames): MapLayer[] {
   const base = { visible: true, locked: false };
   return [
     { id: "floor", name: names.floor, type: "art", mode: "below", floor: true, ...base },
-    { id: "wall", name: names.wall, type: "art", mode: "above", ...base },
+    { id: "wall", name: names.wall, type: "art", mode: "ysort", ...base },
     { id: "objects", name: names.objects, type: "art", mode: "ysort", ...base },
     { id: "collision", name: names.collision, type: "collision", mode: "below", ...base },
   ];

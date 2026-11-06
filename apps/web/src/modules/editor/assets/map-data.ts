@@ -76,8 +76,8 @@ function parseLayer(raw: unknown): MapLayer | null {
   if (!isRecord(raw) || typeof raw.id !== "string") return null;
   const type: LayerType = raw.type === "collision" ? "collision" : "art";
   const floor = type === "art" && (raw.floor === true || raw.id === "floor");
-  // Depth is no longer a choice: the floor sits under everything, the wall is always above the players, every other art layer sorts with the players by Y (collision is never drawn).
-  const mode: LayerMode = floor ? "below" : type === "art" && raw.id === "wall" ? "above" : type === "art" ? "ysort" : "below";
+  // Depth is no longer a choice: the floor sits under everything, every other art layer (the wall included) sorts with the players by Y (collision is never drawn).
+  const mode: LayerMode = floor ? "below" : type === "art" ? "ysort" : "below";
   const layer: MapLayer = { id: raw.id, name: typeof raw.name === "string" ? raw.name : raw.id, type, mode, visible: raw.visible !== false, locked: raw.locked === true };
   // The Floor layer is always the ground (older saves may lack the flag).
   if (floor) layer.floor = true;
