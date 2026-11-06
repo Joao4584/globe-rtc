@@ -12,7 +12,6 @@ import { deleteCookie } from "cookies-next";
 import { storageKey } from "@/modules/shared/config/storage-key";
 import { locales, localesObject } from "@/locales/config";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/modules/shared/ui/select";
-import { ProfileCharacterSelect } from "./profile-character-select";
 import { SupportDialog } from "@/modules/support/components/support-dialog";
 
 export function ListContentDropDown(): ReactElement {
@@ -76,8 +75,6 @@ export function ListContentDropDown(): ReactElement {
           </button>
         ) : null}
       </div>
-      <DropdownMenuSeparator />
-      <ProfileCharacterSelect />
       <DropdownMenuSeparator />
       <DropdownMenuLabel>{t("dashboard.profile.menu.account")}</DropdownMenuLabel>
       <DropdownMenuSeparator />

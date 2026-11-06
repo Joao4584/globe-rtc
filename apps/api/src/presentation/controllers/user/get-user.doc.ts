@@ -12,7 +12,6 @@ export const GetUserDocs = {
           email: 'joao@example.com',
           avatar_url: 'https://example.com/avatar.png',
           public_id: 'usr_01HZX...',
-          character_key: 'steve',
         },
       },
     },

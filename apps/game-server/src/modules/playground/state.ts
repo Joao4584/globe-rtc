@@ -9,7 +9,7 @@ export class Player extends Schema {
   @type("string") dir: string = "down";
   @type("boolean") running: boolean = false;
   @type("boolean") ghost: boolean = false;
-  @type("string") skin: string = "steve";
+  @type("string") skin: string = "ghost";
   @type("string") message: string = "";
 }
 

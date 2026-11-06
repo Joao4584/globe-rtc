@@ -1,4 +1,5 @@
-const allowedSkins = ["steve", "jerry", "mark", "sarah", "ghost"] as const;
+// A skin is "ghost" (no custom character yet, or invisibility mode) or "u:<file id>:<version>" (a character saved from the Character page).
+const CUSTOM_SKIN = /^u:[A-Za-z0-9_-]{1,40}:\d{1,16}$/;
 
 export function sanitizeColor(color?: string | null, fallback = "#27c498") {
   if (!color || typeof color !== "string") return fallback;
@@ -19,10 +20,9 @@ export function sanitizeId(id?: string | null, fallback: string) {
 }
 
 export function sanitizeSkin(skin?: string | null) {
-  if (!skin) return "steve";
-  const value = skin.toString().toLowerCase();
-  if (allowedSkins.includes(value as (typeof allowedSkins)[number])) return value;
-  return "steve";
+  if (!skin) return "ghost";
+  const value = skin.toString();
+  return CUSTOM_SKIN.test(value) ? value : "ghost";
 }
 
 export function sanitizeMessage(raw?: string | null) {

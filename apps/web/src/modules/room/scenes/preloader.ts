@@ -2,13 +2,26 @@ import * as Phaser from "phaser";
 import type { Room } from "colyseus.js";
 import type { PlaygroundState } from "../@types/player";
 import spriteAssets from "@/sprites-config.json";
+import { createSkinAnimations, isCustomSkin, queueSkinLoad } from "../lib/skin-assets";
 
 export default class Preloader extends Phaser.Scene {
   constructor() {
     super("preloader");
   }
 
+  // Custom skins of the players already in the room (the local one included) are loaded before the game starts.
+  private customSkins(): string[] {
+    const room = this.game.registry.get("room") as Room<PlaygroundState> | undefined;
+    const skins = new Set<string>();
+    room?.state?.players?.forEach((player) => {
+      const skin = player.skin?.toString() ?? "";
+      if (isCustomSkin(skin)) skins.add(skin);
+    });
+    return [...skins];
+  }
+
   preload() {
+    this.customSkins().forEach((skin) => queueSkinLoad(this, skin));
     Object.entries(spriteAssets).forEach(([skin, paths]) => {
       this.load.spritesheet(`${skin}-walk`, paths.walk, {
         frameWidth: 32,
@@ -61,6 +74,8 @@ export default class Preloader extends Phaser.Scene {
         }
       });
     });
+
+    this.customSkins().forEach((skin) => createSkinAnimations(this, skin));
 
     this.scene.start("game", { room });
   }

@@ -1,13 +1,12 @@
 "use client";
 
 import Image from "next/image";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useI18n } from "@/locales/client";
 import { DropdownMenu, DropdownMenuTrigger } from "@/modules/shared/ui/dropdown-menu";
 import { Skeleton } from "@/modules/shared/ui/skeleton";
 import { ListContentDropDown } from "./profile-content-dropdown";
 import { useUser } from "../../../hooks/use-user";
-import { useCharacterStore } from "@/modules/room/stores/character.store";
 
 interface UserProfileProps {
   className?: string;
@@ -23,17 +22,10 @@ export default function UserProfileHeader(_props: UserProfileProps) {
   const t = useI18n();
   const [avatarLoaded, setAvatarLoaded] = useState(false);
   const { data } = useUser();
-  const { characterKey, setCharacterKey } = useCharacterStore();
   const greeting = t(getGreetingKeyByHour(new Date().getHours()));
 
   const fullName = data?.name?.trim();
   const displayName = fullName ? fullName.split(/\s+/).slice(0, 2).join(" ") : null;
-
-  useEffect(() => {
-    if (data?.character_key && data.character_key !== characterKey) {
-      setCharacterKey(data.character_key);
-    }
-  }, [characterKey, data?.character_key, setCharacterKey]);
 
   return (
     <DropdownMenu>

@@ -13,7 +13,7 @@ import { PlayerInfoCard } from "./components/player-info-card";
 import { InvisibilityCard } from "./components/invisibility-card";
 import { useUser } from "@/modules/profile/hooks/use-user";
 import type { RoomDetail } from "../rooms/services/get-room-detail";
-import { useCharacterStore } from "@/modules/room/stores/character.store";
+import { useMySkin } from "@/modules/character/hooks/use-my-skin";
 import { useRoomUiStore } from "./stores/room-ui-store";
 import { useRoomStore } from "./stores/room-store";
 import { useRoomUploadImages } from "./hooks/use-room-upload-images";
@@ -53,9 +53,8 @@ export default function RoomPage(props: RoomPageProps) {
   const { data: user, isLoading: isLoadingUser } = useUser();
   const userId = user?.public_id ?? (idParam ? idParam.toString().slice(0, 32) : null);
   const displayName = formatDisplayName(user?.name);
-  const { characterKey } = useCharacterStore();
+  const { skin, isLoading: isLoadingSkin } = useMySkin();
   const invisibleMode = useRoomUiStore((s) => s.invisibleMode);
-  const skin = characterKey || "steve";
   const room = useRoomStore((s) => s.room);
   const { refetchRoomUploads: refetchRoomUploadsFromHook } = useRoomUploadImages(props.room.public_id);
   const sounds = useSounds();
@@ -68,7 +67,8 @@ export default function RoomPage(props: RoomPageProps) {
   const [manageOpen, setManageOpen] = useState(false);
   const [checkingParticipantRole, setCheckingParticipantRole] = useState(Boolean(props.room.is_public));
   const canMountGame = props.room.is_public || hasRoomAccess;
-  const canConnectToGame = canMountGame && !checkingParticipantRole;
+  // The game waits for the saved character, so the player joins already wearing it.
+  const canConnectToGame = canMountGame && !checkingParticipantRole && !isLoadingSkin;
 
   useEffect(() => {
     if (props.room.is_public) {

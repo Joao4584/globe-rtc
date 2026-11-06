@@ -8,6 +8,7 @@ import { TemplateWalkable, buildTemplateMapInScene, emptyTemplateMap, type Templ
 import { MovementPublisher } from "./helpers/movement-publisher";
 import { LocalPlayerPresence } from "./helpers/local-player-presence";
 import { getSoundManager } from "@/modules/shared/audio/sound-manager";
+import { FALLBACK_SKIN } from "../lib/skin-assets";
 
 // Cena principal do jogo: monta mapa/jogador local e sincroniza estado em tempo real com a sala.
 export class MainScene extends Phaser.Scene {
@@ -46,7 +47,7 @@ export class MainScene extends Phaser.Scene {
     const roomSpawn = this.getSpawnFromRoom();
     const localSpawn = this.walkableResolver.coerce(roomSpawn?.x, roomSpawn?.y, spawnFromMap);
 
-    const localSkin = this.room?.state.players.get(this.room?.sessionId ?? "")?.skin?.toString() ?? "steve";
+    const localSkin = this.room?.state.players.get(this.room?.sessionId ?? "")?.skin?.toString() ?? FALLBACK_SKIN;
     const localName = this.room?.state.players.get(this.room?.sessionId ?? "")?.name?.toString() ?? "Player";
 
     this.player = new Player(this, localSpawn.x, localSpawn.y, localSkin);

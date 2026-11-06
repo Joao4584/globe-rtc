@@ -11,6 +11,7 @@ import {
 } from "@/modules/shared/config/phaser-js/scenes/helpers/chat-bubble";
 import { CHAT_HIDE_DELAY_MS, sanitizeChatMessage } from "@/modules/shared/config/phaser-js/chat-config";
 import { useRoomUiStore } from "../../stores/room-ui-store";
+import { FALLBACK_SKIN, loadSkin, skinAnimKey, skinTextureKey, usableSkin } from "../../lib/skin-assets";
 
 type CoerceFn = (x: number | undefined, y: number | undefined) => Phaser.Math.Vector2;
 type RemoteIdentity = { id?: string | number | null };
@@ -34,7 +35,9 @@ export class RemoteManager {
   private sprites = new Map<string, Phaser.GameObjects.Sprite>();
   private labels = new Map<string, NameLabel>();
   private listeners = new Map<string, { cleanup?: () => void }>();
+  /** The skin each remote player asked for, and the one drawn now (the ghost until a custom sheet is loaded). */
   private skins = new Map<string, string>();
+  private activeSkins = new Map<string, string>();
   private bubbles = new Map<string, ChatBubble>();
   private messages = new Map<string, string>();
   private messageSeenAt = new Map<string, number>();
@@ -62,15 +65,18 @@ export class RemoteManager {
       return;
     }
 
-    const skin = (player.skin ?? "steve").toString();
+    const wanted = (player.skin ?? FALLBACK_SKIN).toString();
+    const skin = usableSkin(this.scene, wanted);
     const spawn = this.coerce(player.x, player.y) ?? this.fallbackSpawn;
-    const sprite = this.scene.physics.add.sprite(spawn.x, spawn.y, `${skin}-walk`);
+    const sprite = this.scene.physics.add.sprite(spawn.x, spawn.y, skinTextureKey(skin, "walk"));
     sprite.setDepth(spawn.y);
     sprite.setData("isPlayerSprite", true);
     sprite.setInteractive({ useHandCursor: true });
     this.setRemoteAnimation(sprite, player.dir, false, !!player.running, skin);
     this.sprites.set(sessionId, sprite);
-    this.skins.set(sessionId, skin);
+    this.skins.set(sessionId, wanted);
+    this.activeSkins.set(sessionId, skin);
+    if (skin !== wanted) this.loadRemoteSkin(sessionId, wanted);
     this.createRemoteHoverOutlineSprites(sessionId, sprite);
     this.bindRemotePointerEvents(sessionId, player, sprite);
 
@@ -113,14 +119,13 @@ export class RemoteManager {
     const desired = this.coerce(player.x, player.y) ?? this.fallbackSpawn;
     const dist = Phaser.Math.Distance.Between(target.x, target.y, desired.x, desired.y);
     const moving = dist > 0.2;
-    const nextSkin = (player.skin ?? "steve").toString();
-    const prevSkin = this.skins.get(sessionId);
-    const skin = nextSkin || prevSkin || "steve";
-    if (prevSkin !== skin) {
-      this.skins.set(sessionId, skin);
-      target.setTexture(`${skin}-idle`);
-      this.updateRemoteHoverOutlineSprites(sessionId);
+    const wanted = (player.skin ?? FALLBACK_SKIN).toString() || FALLBACK_SKIN;
+    if (this.skins.get(sessionId) !== wanted) {
+      this.skins.set(sessionId, wanted);
+      this.setActiveSkin(sessionId, target, usableSkin(this.scene, wanted));
+      this.loadRemoteSkin(sessionId, wanted);
     }
+    const skin = this.activeSkins.get(sessionId) ?? FALLBACK_SKIN;
 
     if (!moving) {
       this.scene.tweens.killTweensOf(target);
@@ -199,6 +204,7 @@ export class RemoteManager {
     this.hoverOutlineSprites.delete(sessionId);
 
     this.skins.delete(sessionId);
+    this.activeSkins.delete(sessionId);
     this.messages.delete(sessionId);
     this.messageSeenAt.delete(sessionId);
   }
@@ -222,11 +228,26 @@ export class RemoteManager {
   private setRemoteAnimation(sprite: Phaser.GameObjects.Sprite, dir: "up" | "down" | "left" | "right", moving: boolean, running: boolean, skin: string) {
     if (!sprite.anims) return;
     const safeDir = dir ?? "down";
-    const key = moving ? `${skin}-walk-${safeDir}` : `${skin}-idle-${safeDir}`;
+    const key = skinAnimKey(skin, moving ? "walk" : "idle", safeDir);
     if (this.scene.anims.exists(key)) {
       sprite.anims.timeScale = running ? 1.5 : 1;
       sprite.anims.play(key, true);
     }
+  }
+
+  private setActiveSkin(sessionId: string, sprite: Phaser.GameObjects.Sprite, skin: string) {
+    if (this.activeSkins.get(sessionId) === skin) return;
+    this.activeSkins.set(sessionId, skin);
+    sprite.setTexture(skinTextureKey(skin, "idle"));
+    this.updateRemoteHoverOutlineSprites(sessionId);
+  }
+
+  // A custom sheet that is not in memory yet: load it, then swap the ghost for it (if it is still the wanted one).
+  private loadRemoteSkin(sessionId: string, wanted: string) {
+    loadSkin(this.scene, wanted, () => {
+      const sprite = this.sprites.get(sessionId);
+      if (sprite && this.skins.get(sessionId) === wanted) this.setActiveSkin(sessionId, sprite, wanted);
+    });
   }
 
   private updateLabel(sessionId: string, x: number, y: number, name?: string, isAdmin?: boolean) {

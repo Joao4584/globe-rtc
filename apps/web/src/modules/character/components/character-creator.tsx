@@ -2,7 +2,9 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Check, Dices, Loader2, RotateCcw, RotateCw } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useI18n } from "@/locales/client";
+import { MY_SKIN_KEY } from "../hooks/use-my-skin";
 import { cn } from "@/modules/shared/utils";
 import {
   getMySkin,
@@ -100,6 +102,7 @@ function Choice({ active, onClick, children }: { active: boolean; onClick: () =>
 
 export function CharacterCreator() {
   const label = useLabels();
+  const queryClient = useQueryClient();
 
   const [catalog, setCatalog] = useState<SkinCatalog | null>(null);
   const [selection, setSelection] = useState<SkinSelection | null>(null);
@@ -171,7 +174,9 @@ export function CharacterCreator() {
     setSaving(true);
     setSaveError(false);
     try {
-      await saveSkin(selection);
+      const savedSkin = await saveSkin(selection);
+      // The room reads this: the player gets the new look right away.
+      queryClient.setQueryData(MY_SKIN_KEY, savedSkin);
       setHasCharacter(true);
       setSaved(true);
     } catch {

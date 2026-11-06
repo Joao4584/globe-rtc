@@ -15,6 +15,9 @@ type UseColyseusRoomParams = {
 
 export function useColyseusRoom({ skin, ghost, userId, displayName, isAdmin, roomPublicId }: UseColyseusRoomParams) {
   const roomRef = useRef<Room<PlaygroundState> | null>(null);
+  // The skin is read when joining; later changes reach the room with set_ghost, without reconnecting.
+  const skinRef = useRef(skin);
+  skinRef.current = skin;
   const [room, setRoom] = useState<Room<PlaygroundState> | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,7 +40,7 @@ export function useColyseusRoom({ skin, ghost, userId, displayName, isAdmin, roo
           name: identity.name,
           color: identity.color,
           isAdmin: !!isAdmin,
-          skin,
+          skin: skinRef.current,
           ghost: !!ghost,
           roomPublicId,
         };
@@ -98,7 +101,7 @@ export function useColyseusRoom({ skin, ghost, userId, displayName, isAdmin, roo
       roomRef.current = null;
       setRoom(null);
     };
-  }, [skin, userId, displayName, isAdmin, roomPublicId]);
+  }, [userId, displayName, isAdmin, roomPublicId]);
 
   return { room, error };
 }

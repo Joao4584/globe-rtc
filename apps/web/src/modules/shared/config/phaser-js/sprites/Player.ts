@@ -1,11 +1,15 @@
 import * as Phaser from "phaser";
+import { FALLBACK_SKIN, createSkinAnimations, isCustomSkin, loadSkin, skinAnimKey, skinTextureKey, usableSkin } from "@/modules/room/lib/skin-assets";
 
 type Direction = "up" | "down" | "left" | "right";
 
 export class Player extends Phaser.Physics.Arcade.Sprite {
   private baseSpeed = 150;
   private sprintSpeed = 300;
-  private skin = "steve";
+  /** The skin the player wants (from the room state). */
+  private skin = FALLBACK_SKIN;
+  /** The skin drawn right now: the ghost until a custom sheet is loaded. */
+  private activeSkin = FALLBACK_SKIN;
 
   private cursors: Record<string, Phaser.Input.Keyboard.Key>;
   private sprintKey: Phaser.Input.Keyboard.Key;
@@ -15,9 +19,6 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private lastDirection: Direction = "down";
   private moving = false;
 
-  private spriteName = "";
-  private idleSpriteName = "";
-
   constructor(
     scene: Phaser.Scene,
     x: number,
@@ -25,11 +26,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     skin: string,
     frame?: string | number,
   ) {
-    const spriteName = `${skin}-walk`;
-    super(scene, x, y, spriteName, frame);
+    const active = usableSkin(scene, skin);
+    super(scene, x, y, skinTextureKey(active, "walk"), frame);
     this.skin = skin;
-    this.spriteName = `${skin}-walk`;
-    this.idleSpriteName = `${skin}-idle`;
+    this.activeSkin = active;
 
     scene.add.existing(this);
     scene.physics.add.existing(this);
@@ -73,41 +73,28 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   private createAnimations() {
+    if (isCustomSkin(this.activeSkin)) {
+      createSkinAnimations(this.scene, this.activeSkin);
+      return;
+    }
     const animationManager = this.scene.anims;
-    const createOnce = (config: Phaser.Types.Animations.Animation) => {
-      if (config.key && animationManager.exists(config.key)) {
-        return;
-      }
-
-      animationManager.create(config);
-    };
-
     const dirs: Direction[] = ["down", "left", "right", "up"];
-    const walkFrames: Record<Direction, [number, number]> = {
+    const frames: Record<Direction, [number, number]> = {
       right: [0, 5],
       up: [6, 11],
       left: [12, 17],
       down: [18, 23],
     };
-
     dirs.forEach((dir) => {
-      createOnce({
-        key: this.animKey("walk", dir),
-        frames: animationManager.generateFrameNumbers(this.spriteName, {
-          start: walkFrames[dir][0],
-          end: walkFrames[dir][1],
-        }),
-        frameRate: 10,
-        repeat: -1,
-      });
-      createOnce({
-        key: this.animKey("idle", dir),
-        frames: animationManager.generateFrameNumbers(this.idleSpriteName, {
-          start: walkFrames[dir][0],
-          end: walkFrames[dir][1],
-        }),
-        frameRate: 5,
-        repeat: -1,
+      (["walk", "idle"] as const).forEach((motion) => {
+        const key = this.animKey(motion, dir);
+        if (animationManager.exists(key)) return;
+        animationManager.create({
+          key,
+          frames: animationManager.generateFrameNumbers(`${this.activeSkin}-${motion}`, { start: frames[dir][0], end: frames[dir][1] }),
+          frameRate: motion === "walk" ? 10 : 5,
+          repeat: -1,
+        });
       });
     });
   }
@@ -170,16 +157,25 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   setSkin(nextSkin: string) {
-    const normalized = nextSkin?.trim() || "steve";
+    const normalized = nextSkin?.trim() || FALLBACK_SKIN;
     if (normalized === this.skin) return;
-
     this.skin = normalized;
-    this.spriteName = `${normalized}-walk`;
-    this.idleSpriteName = `${normalized}-idle`;
-    this.setTexture(this.idleSpriteName);
+
+    // Draw it now when its sheet is loaded, otherwise the ghost until the sheet arrives.
+    this.applySkin(usableSkin(this.scene, normalized));
+    loadSkin(this.scene, normalized, () => {
+      if (this.skin === normalized && this.scene) this.applySkin(normalized);
+    });
+  }
+
+  private applySkin(skin: string) {
+    if (skin === this.activeSkin) return;
+    this.activeSkin = skin;
+    this.createAnimations();
+    this.setTexture(skinTextureKey(skin, "idle"));
   }
 
   private animKey(type: "walk" | "idle", dir: Direction) {
-    return `${this.skin}-${type}-${dir}`;
+    return skinAnimKey(this.activeSkin, type, dir);
   }
 }
