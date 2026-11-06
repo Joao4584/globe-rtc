@@ -1,0 +1,40 @@
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, DeleteDateColumn } from 'typeorm';
+import { Room } from './room.entity';
+import { User } from './user.entity';
+
+export type RoomParticipantRole = 'visitor' | 'member' | 'admin';
+
+@Entity('room_participant')
+export class RoomParticipant {
+  @PrimaryGeneratedColumn({ name: 'id' })
+  id: number;
+
+  @Column({ type: 'varchar', length: 26, unique: true, name: 'public_id' })
+  public_id: string;
+
+  @Column({ name: 'room_id' })
+  room_id: number;
+
+  @Column({ name: 'user_id' })
+  user_id: number;
+
+  @Column({ name: 'is_admin', default: false })
+  is_admin: boolean;
+
+  @Column({ type: 'varchar', length: 10, default: 'visitor', name: 'role' })
+  role: RoomParticipantRole;
+
+  @Column({ type: 'timestamp', name: 'joined_at' })
+  joined_at: Date;
+
+  @DeleteDateColumn({ type: 'timestamp', nullable: true, name: 'deleted_at' })
+  deleted_at?: Date;
+
+  @ManyToOne(() => Room, (room) => room.participants)
+  @JoinColumn({ name: 'room_id' })
+  room: Room;
+
+  @ManyToOne(() => User, (user) => user.roomParticipation)
+  @JoinColumn({ name: 'user_id' })
+  user: User;
+}

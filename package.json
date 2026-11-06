@@ -1,0 +1,31 @@
+{
+  "name": "globe-rtc",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "configs/*",
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "prepare": "husky install"
+  },
+  "devDependencies": {
+    "eslint-config-prettier": "^9.1.0",
+    "husky": "^8.0.0",
+    "turbo": "^2.5.5"
+  },
+  "dependencies": {
+    "pg": "^8.16.3"
+  },
+  "pnpm": {
+    "overrides": {
+      "openid-client": "5.6.5"
+    }
+  },
+  "packageManager": "pnpm@8.10.5"
+}

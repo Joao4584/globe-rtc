@@ -1,0 +1,9 @@
+node_modules
+dist
+
+# Licensed art that cannot be redistributed (Modern Interiors pieces). Never commit it and never put it in
+# apps/web/public (public/ is served as raw files to every visitor).
+private-assets
+
+# Old location of the pieces. Kept ignored so a leftover copy is never committed.
+assets

@@ -1,0 +1,54 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "ES2021",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "baseUrl": "./src",
+    "paths": {
+      "@/application/*": [
+        "application/*"
+      ],
+      "@/presentation/*": [
+        "presentation/*"
+      ],
+      "@/domain/*": [
+        "domain/*"
+      ],
+      "@/infrastructure/*": [
+        "infrastructure/*"
+      ],
+      "@/config/*": [
+        "config/*"
+      ],
+      "@/shared/*": [
+        "shared/*"
+      ],
+      "@/database/*": [
+        "database/*"
+      ],
+      "@globe-rtc/env": [
+        "../../packages/env/index.ts"
+      ],
+      
+      "@/dir/*": [
+        "../../../*"
+      ]
+    },
+    "incremental": true,
+    "skipLibCheck": true,
+    "strictNullChecks": false,
+    "noImplicitAny": false,
+    "strictBindCallApply": false,
+    "forceConsistentCasingInFileNames": false,
+    "noFallthroughCasesInSwitch": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "useDefineForClassFields": false
+  }
+}

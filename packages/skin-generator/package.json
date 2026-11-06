@@ -1,0 +1,22 @@
+{
+  "name": "@globe-rtc/skin-generator",
+  "version": "1.0.0",
+  "description": "Builds pixel-art avatar skins by layering Modern Interiors character pieces",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc",
+    "prepare": "tsc",
+    "test": "tsc && node --test test/skin-generator.test.mjs",
+    "sync-assets": "node scripts/sync-assets.mjs"
+  },
+  "dependencies": {
+    "pngjs": "^7.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.10",
+    "@types/pngjs": "^6.0.5",
+    "typescript": "^5.0.4"
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "extends": "./tsconfig.json",
+  "exclude": [
+    "node_modules",
+    "test",
+    "dist",
+    "**/*spec.ts"
+  ],
+  "compilerOptions": {
+    "baseUrl": "./src",
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "paths": {
+      "@/application/*": [
+        "application/*"
+      ],
+      "@/presentation/*": [
+        "presentation/*"
+      ],
+      "@/domain/*": [
+        "domain/*"
+      ],
+      "@/infrastructure/*": [
+        "infrastructure/*"
+      ],
+      "@/config/*": [
+        "config/*"
+      ],
+      "@/shared/*": [
+        "shared/*"
+      ],
+      "@/database/*": [
+        "database/*"
+      ],
+      "@/dir/*": [
+        "../../*"
+      ]
+    }
+  }
+}

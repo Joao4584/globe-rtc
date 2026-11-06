@@ -1,0 +1,96 @@
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  OneToMany,
+  CreateDateColumn,
+  UpdateDateColumn,
+  DeleteDateColumn,
+} from 'typeorm';
+
+import { Room } from './room.entity';
+import { RoomParticipant } from './room-participant.entity';
+import { Friends } from './friends.entity';
+import { RoomFavorite } from './room-favorite.entity';
+
+export enum Language {
+  en_us = 'en_us',
+  pt_br = 'pt_br',
+}
+
+@Entity('users')
+export class User {
+  @PrimaryGeneratedColumn({ name: 'id' })
+  id: number;
+
+  @Column({ type: 'varchar', length: 26, unique: true, name: 'public_id' })
+  public_id: string;
+
+  @Column({ type: 'bigint', nullable: true, name: 'last_login_iat' })
+  last_login_iat?: bigint;
+
+  @Column({ name: 'name' })
+  name: string;
+
+  @Column({ type: 'varchar', length: 30, unique: true, name: 'username' })
+  username: string;
+
+  @Column({ unique: true, name: 'email' })
+  email: string;
+
+  @Column({ nullable: true, name: 'password' })
+  password?: string;
+
+  @Column({ name: 'github_id', nullable: true, unique: true })
+  github_id?: string;
+
+  @Column({ name: 'google_id', nullable: true, unique: true })
+  google_id?: string;
+
+  @Column({ name: 'avatar_url', nullable: true })
+  avatar_url?: string;
+
+  @Column({ name: 'github_link', nullable: true })
+  github_link?: string;
+
+  @Column({ nullable: true, name: 'bio' })
+  bio?: string;
+
+  @Column({
+    type: 'enum',
+    enum: Language,
+    default: Language.pt_br,
+    name: 'language',
+  })
+  language: Language;
+
+  @Column({ name: 'last_online', type: 'timestamp', nullable: true })
+  last_online?: Date;
+
+  @Column({ name: 'character_key', type: 'varchar', length: 15, nullable: true })
+  character_key?: string;
+
+  @CreateDateColumn({ name: 'created_at' })
+  created_at: Date;
+
+  @UpdateDateColumn({ name: 'updated_at' })
+  updated_at: Date;
+
+  @DeleteDateColumn({ type: 'timestamp', nullable: true, name: 'deleted_at' })
+  deleted_at?: Date;
+
+  @OneToMany(() => Room, (room) => room.owner)
+  createdRooms: Room[];
+
+  @OneToMany(() => RoomParticipant, (roomParticipant) => roomParticipant.user)
+  roomParticipation: RoomParticipant[];
+
+  @OneToMany(() => Friends, (friends) => friends.user)
+  friendsSent: Friends[];
+
+  @OneToMany(() => Friends, (friends) => friends.friend)
+  friendsReceived: Friends[];
+
+  @OneToMany(() => RoomFavorite, (favorite) => favorite.user)
+  roomFavorites: RoomFavorite[];
+}
