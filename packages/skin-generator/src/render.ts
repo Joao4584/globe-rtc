@@ -81,8 +81,8 @@ export async function renderSkin(selection: SkinSelection, options: RenderSkinOp
   if (!Number.isInteger(scale) || scale < 1 || scale > MAX_SCALE) {
     throw new SkinGeneratorError(`"scale" must be an integer from 1 to ${MAX_SCALE}.`);
   }
-  const animations = options.animations;
-  for (const name of animations ?? []) {
+  const requested = options.animations;
+  for (const name of requested ?? []) {
     if (!(name in ANIMATIONS)) {
       throw new SkinGeneratorError(`Unknown animation "${String(name)}". Use one of: ${Object.keys(ANIMATIONS).join(", ")}.`);
     }
@@ -91,6 +91,9 @@ export async function renderSkin(selection: SkinSelection, options: RenderSkinOp
   validateSelection(selection, catalog);
 
   const layout = sheetLayout(selection.type, size);
+  // The kid sheet is shorter (4 rows): animations whose row is not in it (sit, throw, punch, hurt) are left out, and the layout says which ones are in.
+  const rowCount = layout.height / layout.frameHeight;
+  const animations = requested?.filter((name) => ANIMATIONS[name].row < rowCount);
   const sheet = new PNG({ width: layout.width, height: layout.height });
   for (const part of LAYER_ORDER) {
     const id = selection[part];

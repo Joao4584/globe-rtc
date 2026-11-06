@@ -180,6 +180,10 @@ export function CharacterCreator() {
     }
   };
 
+  // Kids only have some of the animations: list what the rendered sheet really has, and fall back to idle if the chosen one is gone.
+  const availableAnimations = rendered ? ANIMATIONS.filter((name) => rendered.layout.animations.some((item) => item.name === name)) : ANIMATIONS;
+  const shownAnimation = availableAnimations.includes(animation as (typeof ANIMATIONS)[number]) ? animation : "idle";
+
   const rows = useMemo(() => {
     if (!catalog || !selection) return [];
     return PARTS.filter((part) => groupsOf(catalog, selection.type, part).length > 0);
@@ -243,7 +247,7 @@ export function CharacterCreator() {
       {/* the character */}
       <Panel className="flex min-h-[420px] items-center justify-center">
         {rendered ? (
-          <SkinPreview sheet={rendered.spritesheet} layout={rendered.layout} animation={animation} direction="down" scale={5} />
+          <SkinPreview sheet={rendered.spritesheet} layout={rendered.layout} animation={shownAnimation} direction="down" scale={5} />
         ) : (
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         )}
@@ -254,8 +258,8 @@ export function CharacterCreator() {
         <div className="space-y-2">
           <p className="text-xs font-semibold uppercase tracking-wide text-foreground">{label("animation")}</p>
           <div className="grid gap-1.5">
-            {ANIMATIONS.map((name) => (
-              <Choice key={name} active={animation === name} onClick={() => setAnimation(name)}>
+            {availableAnimations.map((name) => (
+              <Choice key={name} active={shownAnimation === name} onClick={() => setAnimation(name)}>
                 {label(`anim_${name}`)}
               </Choice>
             ))}
