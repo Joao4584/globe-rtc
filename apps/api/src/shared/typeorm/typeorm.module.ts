@@ -8,6 +8,7 @@ import { RoomFavorite } from '@/infrastructure/entities/room-favorite.entity';
 import { UploadFile } from '@/infrastructure/entities/upload-file.entity';
 import { SupportRequest } from '@/infrastructure/entities/support-request.entity';
 import { MapTemplate } from '@/infrastructure/entities/map-template.entity';
+import { UserSkin } from '@/infrastructure/entities/user-skin.entity';
 import { env } from '@globe-rtc/env';
 
 @Module({
@@ -22,7 +23,7 @@ import { env } from '@globe-rtc/env';
       extra: {
         options: `-c timezone=${env.DB_TIMEZONE}`,
       },
-      entities: [User, Room, RoomParticipant, RoomFavorite, Friends, UploadFile, SupportRequest, MapTemplate],
+      entities: [User, Room, RoomParticipant, RoomFavorite, Friends, UploadFile, SupportRequest, MapTemplate, UserSkin],
       synchronize: false,
     }),
   ],

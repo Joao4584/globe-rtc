@@ -31,6 +31,7 @@ export class AppModule implements NestModule {
         { path: 'docs-json', method: RequestMethod.GET },
         { path: 'upload/file/(.*)', method: RequestMethod.GET },
         { path: 'upload/room/(.*)/file', method: RequestMethod.GET },
+        { path: 'skin/file/(.*)', method: RequestMethod.GET },
       )
       .forRoutes('*');
   }

@@ -70,7 +70,7 @@ export default {
       rotateLeft: "Girar para a esquerda",
       rotateRight: "Girar para a direita",
       createButton: "Criar personagem",
-      save: "Salvar",
+      save: "Atualizar personagem",
       saving: "Salvando...",
       saved: "Salvo",
       saveFailed: "Nao foi possivel salvar. Tente de novo.",

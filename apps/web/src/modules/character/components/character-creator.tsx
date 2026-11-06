@@ -1,12 +1,11 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Check, Dices, Loader2 } from "lucide-react";
 import { useI18n } from "@/locales/client";
 import { cn } from "@/modules/shared/utils";
-import { useUser } from "@/modules/profile/hooks/use-user";
 import {
+  getMySkin,
   getSkinCatalog,
   renderSkin,
   rollSkin,
@@ -101,8 +100,6 @@ function Choice({ active, onClick, children }: { active: boolean; onClick: () =>
 
 export function CharacterCreator() {
   const label = useLabels();
-  const queryClient = useQueryClient();
-  const { data: user } = useUser();
 
   const [catalog, setCatalog] = useState<SkinCatalog | null>(null);
   const [selection, setSelection] = useState<SkinSelection | null>(null);
@@ -112,7 +109,9 @@ export function CharacterCreator() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState(false);
-  const isFirstCharacter = user ? !user.skin : false;
+  // Unknown until the saved character is loaded; the button says Create until the first save, Update afterwards.
+  const [hasCharacter, setHasCharacter] = useState<boolean | null>(null);
+  const isFirstCharacter = hasCharacter === false;
   const renderId = useRef(0);
 
   // The pieces to pick from, then the user's own character, or a random one when they have none yet.
@@ -121,11 +120,14 @@ export function CharacterCreator() {
   }, []);
 
   useEffect(() => {
-    if (!user || selection) return;
-    const saved = user.skin as unknown as SkinSelection | null | undefined;
-    if (saved) setSelection(saved);
-    else rollSkin("adult").then(setSelection).catch(() => setFailed(true));
-  }, [user, selection]);
+    getMySkin()
+      .then((mine) => {
+        setHasCharacter(Boolean(mine));
+        if (mine) setSelection(mine.selection);
+        else return rollSkin("adult").then(setSelection);
+      })
+      .catch(() => setFailed(true));
+  }, []);
 
   // Re-render the preview a moment after the last click (every click is a request to the API).
   useEffect(() => {
@@ -169,7 +171,7 @@ export function CharacterCreator() {
     setSaveError(false);
     try {
       await saveSkin(selection);
-      queryClient.setQueryData(["user"], (previous: object | undefined) => (previous ? { ...previous, skin: selection } : previous));
+      setHasCharacter(true);
       setSaved(true);
     } catch {
       setSaveError(true);

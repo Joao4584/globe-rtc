@@ -59,6 +59,21 @@ export async function rollSkin(type: SkinType): Promise<SkinSelection> {
   return response.selection;
 }
 
-export async function saveSkin(selection: SkinSelection): Promise<void> {
-  await api.patch("user/me/skin", { json: { selection } });
+/** The character the user saved: the pieces and where its spritesheet file lives on the server. */
+export interface SavedSkin {
+  selection: SkinSelection;
+  url: string;
+  updated_at: string;
+}
+
+/** null until the user creates their character. */
+export async function getMySkin(): Promise<SavedSkin | null> {
+  const response = await api.get("skin/me").json<ApiResponse<SavedSkin | null>>();
+  return response.data;
+}
+
+/** Creates the character the first time; afterwards updates it (the file on the server is replaced). */
+export async function saveSkin(selection: SkinSelection): Promise<SavedSkin> {
+  const response = await api.put("skin/me", { json: { selection } }).json<ApiResponse<SavedSkin>>();
+  return response.data;
 }
