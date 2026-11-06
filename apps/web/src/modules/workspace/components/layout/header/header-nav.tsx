@@ -10,7 +10,8 @@ import { getDashboardRoutes, type RouteProps } from "@/modules/workspace/routes/
 const BASE_PATH = "/app";
 
 // The pages of the app as links in the header (there are few of them, so no sidebar).
-export function HeaderNav() {
+// `only` shows just these paths, `except` hides them: the header splits the links in two groups (left and next to the social button).
+export function HeaderNav({ only, except }: { only?: string[]; except?: string[] }) {
   const t = useI18n();
   const pathname = usePathname() ?? "";
   const routes = useMemo(() => {
@@ -19,8 +20,8 @@ export function HeaderNav() {
       if ("routes" in route) flat.push(...route.routes);
       else flat.push(route);
     }
-    return flat;
-  }, [t]);
+    return flat.filter((route) => (!only || only.includes(route.path)) && !except?.includes(route.path));
+  }, [t, only, except]);
 
   // The part after /app/ decides which link is active ("" is the home).
   const activeSegment = (pathname.split(`${BASE_PATH}/`)[1] ?? "").split("/")[0];

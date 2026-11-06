@@ -12,6 +12,9 @@ import { CreateRoom } from "@/modules/rooms/components/create-room/create-room";
 import { HeaderNav } from "./header-nav";
 import UserProfileHeader from "@/modules/profile/components/layout/profile/profile-header";
 
+// Links shown on the right, next to the friends button.
+const SOCIAL_PATHS = ["/character"];
+
 interface HeaderProps {
   onSearch?: (query: string) => void;
 }
@@ -58,7 +61,8 @@ export function Header({ onSearch }: HeaderProps) {
       <div className="flex items-center justify-between gap-4 px-5 py-4">
         <div className="flex min-w-fit items-center gap-6">
           <Image src="/meta-rtc-logo.png" width={120} height={70} alt="Globe RTC" />
-          <HeaderNav />
+          <HeaderNav except={SOCIAL_PATHS} />
+          <CreateRoom />
         </div>
         <div className="flex items-center gap-2">
           {isRoomRoute && (
@@ -67,7 +71,7 @@ export function Header({ onSearch }: HeaderProps) {
               {t("dashboard.header.share")}
             </Button>
           )}
-          <CreateRoom />
+          <HeaderNav only={SOCIAL_PATHS} />
           <FriendsHeaderButton />
           <UserProfileHeader />
         </div>
