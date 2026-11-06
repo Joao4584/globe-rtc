@@ -1,6 +1,6 @@
 import * as Phaser from "phaser";
 import { TILE, getItem, itemKey, type Brush, type MapItem } from "../assets/map-assets";
-import { isProtectedLayer, newLayerId, type LayerController, type LayerState, type LayerType, type MapLayer } from "../assets/map-layers";
+import { acceptsKind, isProtectedLayer, newLayerId, type LayerController, type LayerState, type LayerType, type MapLayer } from "../assets/map-layers";
 import { parseMap, serializeMap, type MapData, type PlacedRecord } from "../assets/map-data";
 
 export const BUILDER_SCENE_KEY = "builder";
@@ -350,15 +350,17 @@ export class BuilderScene extends Phaser.Scene implements BuilderController {
     this.ghost.forEach((image) => image.destroy());
     this.ghost = [];
     const collision = this.activeLayer.type === "collision";
-    if (this.brush && !collision) {
+    const fits = this.brushFitsLayer(this.activeLayer);
+    if (this.brush && !collision && fits) {
       this.ghost = this.brush.items.map(({ item }) => this.add.image(0, 0, this.ensureTexture(item)).setOrigin(0, 0).setAlpha(0.65).setDepth(TOP_DEPTH));
       this.hover.setSize(this.brush.width * TILE, this.brush.height * TILE);
     } else {
       this.hover.setSize(TILE, TILE);
     }
-    // A collision layer paints red cells instead of using the brush.
-    this.hover.setFillStyle(collision ? COLLISION_COLOR : 0x38bdf8, collision ? 0.4 : 0.2);
-    this.hover.setStrokeStyle(1, collision ? 0xfca5a5 : 0x7dd3fc, 1);
+    // A collision layer paints red cells instead of using the brush; a piece this layer does not take shows a red cell too.
+    const blocked = collision || (Boolean(this.brush) && !fits);
+    this.hover.setFillStyle(blocked ? COLLISION_COLOR : 0x38bdf8, blocked ? 0.4 : 0.2);
+    this.hover.setStrokeStyle(1, blocked ? 0xfca5a5 : 0x7dd3fc, 1);
     this.moveGhost(this.lastTile);
   }
 
@@ -385,6 +387,12 @@ export class BuilderScene extends Phaser.Scene implements BuilderController {
 
   // ---- painting ----
 
+  // The brush comes from one palette tab, so all its pieces share a kind.
+  private brushFitsLayer(layer: MapLayer) {
+    const kind = this.brush?.items[0]?.item.kind;
+    return !kind || acceptsKind(layer, kind);
+  }
+
   private canEdit(layer: MapLayer) {
     return layer.visible && !layer.locked;
   }
@@ -396,6 +404,7 @@ export class BuilderScene extends Phaser.Scene implements BuilderController {
       this.checkpointStroke();
       this.addCollision(layer.id, cellX, cellY);
     } else if (this.brush) {
+      if (!this.brushFitsLayer(layer)) return;
       this.checkpointStroke();
       for (const { item, dx, dy } of this.brush.items) this.addItem(layer.id, item, cellX + dx, cellY + dy, ++this.seq);
     } else {

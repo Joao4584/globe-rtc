@@ -1,4 +1,5 @@
 // Layer model of the map editor. See .claude/docs/map-layers.md.
+import type { ItemKind } from "./map-assets";
 
 export type LayerType = "art" | "collision";
 // How an art layer relates to players in the game: always under, sorted with them by y, or always over.
@@ -46,4 +47,17 @@ export interface LayerController {
   /** direction 1 = towards the top of the stack, -1 = towards the bottom */
   moveLayer(id: string, direction: 1 | -1): void;
   removeLayer(id: string): void;
+}
+
+// What each layer takes: Floor only floor pieces, Wall only wall pieces (borders go with both), any other art layer only
+// objects and animated objects. Collision layers take no pieces (they paint cells).
+export type LayerAccepts = "floor" | "wall" | "objects";
+export const layerAccepts = (layer: Pick<MapLayer, "id">): LayerAccepts => (layer.id === "floor" ? "floor" : layer.id === "wall" ? "wall" : "objects");
+
+export function acceptsKind(layer: Pick<MapLayer, "id" | "type">, kind: ItemKind): boolean {
+  if (layer.type === "collision") return false;
+  const accepts = layerAccepts(layer);
+  if (accepts === "floor") return kind === "floor" || kind === "border";
+  if (accepts === "wall") return kind === "wall" || kind === "border";
+  return kind === "object" || kind === "animated";
 }

@@ -78,6 +78,11 @@ export default {
           addCollision: "Collision",
           newName: "Layer {number}",
           protected: "Fixed layer: it cannot be removed",
+          accepts: {
+            floor: "Takes: floors and borders",
+            wall: "Takes: walls and borders",
+            objects: "Takes: objects and animated objects",
+          },
           newCollisionName: "Collision",
           defaultFloor: "Floor",
           defaultWall: "Wall",

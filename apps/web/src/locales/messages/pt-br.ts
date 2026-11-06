@@ -78,6 +78,11 @@ export default {
           addCollision: "Colisao",
           newName: "Camada {number}",
           protected: "Camada fixa: nao pode ser removida",
+          accepts: {
+            floor: "Aceita: chao e bordas",
+            wall: "Aceita: paredes e bordas",
+            objects: "Aceita: objetos e objetos animados",
+          },
           newCollisionName: "Colisao",
           defaultFloor: "Chao",
           defaultWall: "Parede",

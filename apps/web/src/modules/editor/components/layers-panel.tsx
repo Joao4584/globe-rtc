@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { ChevronDown, ChevronUp, Eye, EyeOff, Lock, Plus, Square, Trash2, Unlock } from "lucide-react";
 import { useI18n } from "@/locales/client";
 import { cn } from "@/modules/shared/utils";
-import { isProtectedLayer, type LayerController, type LayerMode, type LayerState, type MapLayer } from "../assets/map-layers";
+import { isProtectedLayer, layerAccepts, type LayerController, type LayerMode, type LayerState, type MapLayer } from "../assets/map-layers";
 import { ui } from "../ui/theme";
 
 type LayersPanelProps = {
@@ -130,6 +130,11 @@ export function LayersPanel({ state, controller }: LayersPanelProps) {
                     </option>
                   ))}
                 </select>
+              ) : null}
+              {layer.type === "art" ? (
+                <p className={cn("ml-1 mt-0.5 text-[10px] leading-tight", ui.muted)}>
+                  {t(`dashboard.editor.builder.layers.accepts.${layerAccepts(layer)}` as "dashboard.editor.builder.layers.accepts.floor")}
+                </p>
               ) : null}
             </li>
           );
