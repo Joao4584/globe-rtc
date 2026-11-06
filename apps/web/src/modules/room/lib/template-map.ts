@@ -68,13 +68,15 @@ export async function prepareTemplateMap(raw: unknown): Promise<TemplateMapData 
     const x = rec.x * TILE + item.offsetX;
     const y = rec.y * TILE + item.offsetY;
     const index = layerIndex.get(layer.id) ?? 0;
+    // A flat item (rug) is drawn like a below layer: over the floor of lower layers, under every player.
+    const mode = rec.flat ? "below" : layer.mode;
     const depth =
-      layer.mode === "below"
+      mode === "below"
         ? BELOW_BASE + index * LAYER_STEP + seq
-        : layer.mode === "above"
+        : mode === "above"
           ? ABOVE_BASE + index * LAYER_STEP + seq
           : y + item.height - PLAYER_FEET_OFFSET + index * 0.01 + seq * 1e-7;
-    drawables.push({ item, x, y, depth, mode: layer.mode, layer: index });
+    drawables.push({ item, x, y, depth, mode, layer: index });
   }
 
   if (!drawables.length) return null;

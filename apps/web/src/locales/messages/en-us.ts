@@ -145,6 +145,8 @@ export default {
         palette: {
           open: "Palette",
           drop: "Drop item (Esc)",
+          flat: "Rug",
+          flatHint: "On: players walk over the object (e.g. a rug). Off: the object sorts with the players by Y.",
           tabObjects: "Objects",
           tabAnimated: "Animated objects",
           animatedHint: "Click to pick. On the map, hover an object to see it animate.",

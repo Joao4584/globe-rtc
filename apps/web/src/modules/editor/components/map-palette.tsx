@@ -45,6 +45,8 @@ export function MapPalette({ brush, onBrush }: MapPaletteProps) {
   const t = useI18n();
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<Tab>("objects");
+  // Rug mode: what is placed is flat, the players walk over it. Applies to every pick until switched off.
+  const [flat, setFlat] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -54,7 +56,7 @@ export function MapPalette({ brush, onBrush }: MapPaletteProps) {
   }, [open]);
 
   const pick = (next: Brush) => {
-    onBrush(next);
+    onBrush({ ...next, flat });
     setOpen(false);
   };
 
@@ -77,6 +79,20 @@ export function MapPalette({ brush, onBrush }: MapPaletteProps) {
       ) : null}
 
       <div className="absolute bottom-3 right-3 z-10 flex items-center gap-2">
+        {brush && brush.items[0]?.item.kind !== "wall" && brush.items[0]?.item.kind !== "floor" && brush.items[0]?.item.kind !== "border" ? (
+          <button
+            type="button"
+            title={t("dashboard.editor.builder.palette.flatHint")}
+            aria-pressed={flat}
+            onClick={() => {
+              setFlat(!flat);
+              onBrush({ ...brush, flat: !flat });
+            }}
+            className={cn("px-3 py-2 text-sm", ui.panel, flat ? ui.tabOn : ui.ghost)}
+          >
+            {t("dashboard.editor.builder.palette.flat")}
+          </button>
+        ) : null}
         {brush ? (
           <button type="button" onClick={() => onBrush(null)} className={cn("px-3 py-2 text-sm", ui.panel, ui.ghost)}>
             {t("dashboard.editor.builder.palette.drop")}

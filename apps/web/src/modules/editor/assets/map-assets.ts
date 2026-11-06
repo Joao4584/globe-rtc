@@ -27,7 +27,8 @@ export type MapItem = {
 };
 
 // What follows the mouse: items laid out in tile offsets from the cursor cell.
-export type Brush = { items: { item: MapItem; dx: number; dy: number }[]; width: number; height: number };
+/** `flat`: placed as a rug, the players walk over it (drawn under them instead of sorted by Y). */
+export type Brush = { items: { item: MapItem; dx: number; dy: number }[]; width: number; height: number; flat?: boolean };
 
 export const itemKey = (item: Pick<MapItem, "kind" | "id">) => `${item.kind}:${item.id}`;
 

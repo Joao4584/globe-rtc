@@ -4,7 +4,8 @@ import type { LayerMode, LayerType, MapLayer } from "./map-layers";
 
 export const MAP_DATA_VERSION = 3;
 
-export type MapItemRef = [ref: string, x: number, y: number];
+/** The 4th element is 1 for a flat item (a rug): drawn under the players instead of sorted with them. */
+export type MapItemRef = [ref: string, x: number, y: number] | [ref: string, x: number, y: number, flat: 1];
 export type MapDataLayer = MapLayer & { items?: MapItemRef[]; cells?: [number, number][] };
 export type MapBounds = { minX: number; minY: number; maxX: number; maxY: number };
 export type MapData = {
@@ -16,7 +17,7 @@ export type MapData = {
 };
 
 // A placed thing as the editor scene tracks it; `seq` is the placement order.
-export type PlacedRecord = { kind: ItemKind | "collision"; id: string; x: number; y: number; layer: string; seq: number };
+export type PlacedRecord = { kind: ItemKind | "collision"; id: string; x: number; y: number; layer: string; seq: number; flat?: boolean };
 
 const KIND_PREFIX: Record<ItemKind, string> = { object: "o", animated: "a", wall: "w", floor: "f", border: "b" };
 const PREFIX_KIND: Record<string, ItemKind> = { o: "object", a: "animated", w: "wall", f: "floor", b: "border" };
@@ -45,7 +46,9 @@ export function serializeMap(layers: MapLayer[], records: PlacedRecord[], active
       ? { ...layer, cells: mine.filter((rec) => rec.kind === "collision").map((rec): [number, number] => [rec.x, rec.y]) }
       : {
           ...layer,
-          items: mine.filter((rec) => rec.kind !== "collision").map((rec): MapItemRef => [`${KIND_PREFIX[rec.kind as ItemKind]}:${rec.id}`, rec.x, rec.y]),
+          items: mine
+            .filter((rec) => rec.kind !== "collision")
+            .map((rec): MapItemRef => (rec.flat ? [`${KIND_PREFIX[rec.kind as ItemKind]}:${rec.id}`, rec.x, rec.y, 1] : [`${KIND_PREFIX[rec.kind as ItemKind]}:${rec.id}`, rec.x, rec.y])),
         };
   });
 
@@ -102,7 +105,7 @@ export function parseMap(raw: unknown): ParsedMap | null {
           if (!Array.isArray(item) || typeof item[0] !== "string" || !isNumber(item[1]) || !isNumber(item[2])) continue;
           const split = item[0].indexOf(":");
           const kind = PREFIX_KIND[item[0].slice(0, split)];
-          if (kind) records.push({ kind, id: item[0].slice(split + 1), x: item[1], y: item[2], layer: layer.id });
+          if (kind) records.push({ kind, id: item[0].slice(split + 1), x: item[1], y: item[2], layer: layer.id, ...(item[3] === 1 ? { flat: true } : {}) });
         }
       }
     }

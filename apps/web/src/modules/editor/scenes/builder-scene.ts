@@ -10,6 +10,7 @@ const MAX_ZOOM = 4;
 // Each layer owns a band of depth; inside it items sort by placement order or (ysort) by bottom edge.
 const LAYER_BAND = 2_000_000;
 const BAND_OFFSET = 500_000;
+const FLAT_OFFSET = 400_000;
 const TOP_DEPTH = 9_000_000_000;
 const COLLISION_COLOR = 0xef4444;
 const PROTECTED = ["floor", "wall"];
@@ -211,6 +212,8 @@ export class BuilderScene extends Phaser.Scene implements BuilderController {
   private depthOf(entry: Entry) {
     const index = this.layers.findIndex((layer) => layer.id === entry.rec.layer);
     const base = index * LAYER_BAND + BAND_OFFSET;
+    // A flat item (rug) sits under everything of its layer that sorts by Y.
+    if (entry.rec.flat) return base - FLAT_OFFSET + entry.rec.seq;
     if (entry.item && this.layers[index]?.mode === "ysort") return base + entry.visual.y + entry.item.height;
     return base + entry.rec.seq;
   }
@@ -406,7 +409,7 @@ export class BuilderScene extends Phaser.Scene implements BuilderController {
     } else if (this.brush) {
       if (!this.brushFitsLayer(layer)) return;
       this.checkpointStroke();
-      for (const { item, dx, dy } of this.brush.items) this.addItem(layer.id, item, cellX + dx, cellY + dy, ++this.seq);
+      for (const { item, dx, dy } of this.brush.items) this.addItem(layer.id, item, cellX + dx, cellY + dy, ++this.seq, this.brush.flat);
     } else {
       return;
     }
@@ -417,14 +420,14 @@ export class BuilderScene extends Phaser.Scene implements BuilderController {
     return kind === "tile" || kind === "collision" ? `${kind}:${layerId}:${x},${y}` : `o:${layerId}:${id}@${x},${y}`;
   }
 
-  private addItem(layerId: string, item: MapItem, x: number, y: number, seq: number) {
+  private addItem(layerId: string, item: MapItem, x: number, y: number, seq: number, flat = false) {
     const key = this.entryKey(layerId, item.kind, item.id, x, y);
     this.removeEntry(key);
 
     const visual = item.animation
       ? this.add.image(x * TILE + item.offsetX, y * TILE + item.offsetY, this.ensureStrip(item), 0).setOrigin(0, 0)
       : this.add.image(x * TILE + item.offsetX, y * TILE + item.offsetY, this.ensureTexture(item)).setOrigin(0, 0);
-    const entry: Entry = { rec: { kind: item.kind, id: item.id, x, y, layer: layerId, seq }, item, visual };
+    const entry: Entry = { rec: { kind: item.kind, id: item.id, x, y, layer: layerId, seq, ...(flat ? { flat: true } : {}) }, item, visual };
     this.register(key, entry);
   }
 
@@ -510,7 +513,7 @@ export class BuilderScene extends Phaser.Scene implements BuilderController {
     this.layers = snapshot.layers.map((layer) => ({ ...layer }));
     this.activeId = snapshot.activeId;
     for (const { rec, item } of snapshot.entries) {
-      if (item) this.addItem(rec.layer, item, rec.x, rec.y, rec.seq);
+      if (item) this.addItem(rec.layer, item, rec.x, rec.y, rec.seq, rec.flat);
       else this.addCollision(rec.layer, rec.x, rec.y, rec.seq);
     }
     this.refreshDepths();
@@ -600,7 +603,7 @@ export class BuilderScene extends Phaser.Scene implements BuilderController {
           // Version 1 saves had no layers: tiles go to floor/wall by category, blocks to objects.
           const legacy = item.layer === "floor" ? "floor" : item.layer === "wall" ? "wall" : "objects";
           const layerId = known.has(rec.layer) ? rec.layer : known.has(legacy) ? legacy : fallbackLayer;
-          this.addItem(layerId, item, rec.x, rec.y, rec.seq);
+          this.addItem(layerId, item, rec.x, rec.y, rec.seq, rec.flat);
         })
         .catch(() => {
           this.pending = this.pending.filter((entry) => entry !== rec);

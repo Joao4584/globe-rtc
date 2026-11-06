@@ -54,7 +54,7 @@ export function validateMapData(data: Record<string, unknown>): void {
       entries += items.length;
       if (entries > MAX_ENTRIES) fail('itens demais');
       for (const item of items) {
-        if (!Array.isArray(item) || item.length !== 3 || typeof item[0] !== 'string' || item[0].length > MAX_TEXT || !REF_PATTERN.test(item[0]) || !isCoord(item[1]) || !isCoord(item[2])) {
+        if (!Array.isArray(item) || (item.length !== 3 && item.length !== 4) || typeof item[0] !== 'string' || item[0].length > MAX_TEXT || !REF_PATTERN.test(item[0]) || !isCoord(item[1]) || !isCoord(item[2]) || (item.length === 4 && item[3] !== 1)) {
           fail('item invalido');
         }
       }

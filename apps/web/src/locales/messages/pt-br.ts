@@ -145,6 +145,8 @@ export default {
         palette: {
           open: "Paleta",
           drop: "Soltar item (Esc)",
+          flat: "Tapete",
+          flatHint: "Liga: o jogador passa por cima do objeto (ex.: tapete). Desligado: o objeto ordena com o jogador pelo eixo Y.",
           tabObjects: "Objetos",
           tabAnimated: "Objetos animados",
           animatedHint: "Clique para pegar. No mapa, passe o mouse sobre o objeto para ver a animacao.",

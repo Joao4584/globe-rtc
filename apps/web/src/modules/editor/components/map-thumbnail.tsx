@@ -37,7 +37,7 @@ export function MapThumbnail({ data }: { data: unknown }) {
               const px = rec.x * TILE + item.offsetX;
               const py = rec.y * TILE + item.offsetY;
               const base = (layerIndex.get(rec.layer) ?? 0) * 2_000_000 + 500_000;
-              return { item, px, py, order: base + (modes.get(rec.layer) === "ysort" ? py + item.height : seq) };
+              return { item, px, py, order: rec.flat ? base - 400_000 + seq : base + (modes.get(rec.layer) === "ysort" ? py + item.height : seq) };
             })
             .catch(() => null),
         ),
