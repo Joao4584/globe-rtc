@@ -9,11 +9,9 @@ import { AlertCircle, Share2 } from "lucide-react";
 import Image from "next/image";
 import { FriendsHeaderButton } from "@/modules/friends/components/friends-header/friends-header-button";
 import { CreateRoom } from "@/modules/rooms/components/create-room/create-room";
+import { CharacterDialog } from "@/modules/character/components/character-dialog";
 import { HeaderNav } from "./header-nav";
 import UserProfileHeader from "@/modules/profile/components/layout/profile/profile-header";
-
-// Links shown on the right, next to the friends button.
-const SOCIAL_PATHS = ["/character"];
 
 interface HeaderProps {
   onSearch?: (query: string) => void;
@@ -62,7 +60,7 @@ export function Header({ onSearch }: HeaderProps) {
         <div className="flex min-w-fit items-center gap-6">
           <Image src="/meta-rtc-logo.png" width={120} height={70} alt="Globe RTC" />
           <CreateRoom />
-          <HeaderNav except={SOCIAL_PATHS} />
+          <HeaderNav />
         </div>
         <div className="flex items-center gap-2">
           {isRoomRoute && (
@@ -71,7 +69,7 @@ export function Header({ onSearch }: HeaderProps) {
               {t("dashboard.header.share")}
             </Button>
           )}
-          <HeaderNav only={SOCIAL_PATHS} />
+          <CharacterDialog />
           <FriendsHeaderButton />
           <UserProfileHeader />
         </div>

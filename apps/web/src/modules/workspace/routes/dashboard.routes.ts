@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { Clock8, PencilRuler, UserRound } from "lucide-react";
+import { Clock8, PencilRuler } from "lucide-react";
 
 export interface RouteProps {
   title: string;
@@ -40,12 +40,6 @@ export const routeDashboardConfig: RouteDefinitionConfig[] = [
     fallback: "editor",
     icon: PencilRuler,
     path: "/editor",
-  },
-  {
-    titleKey: "dashboard.menu.character",
-    fallback: "character",
-    icon: UserRound,
-    path: "/character",
   },
 ];
 

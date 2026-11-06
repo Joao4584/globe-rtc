@@ -205,7 +205,7 @@ export function CharacterCreator() {
   }
 
   return (
-    <div className="mx-auto grid max-w-5xl gap-4 p-4 lg:grid-cols-[320px_1fr_220px]">
+    <div className="grid gap-4 lg:grid-cols-[320px_1fr_220px]">
       {/* pick the pieces */}
       <Panel className="space-y-5">
         <div className="grid grid-cols-2 gap-2">
