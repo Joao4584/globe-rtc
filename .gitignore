@@ -45,3 +45,6 @@ next-env.d.ts
 
 # editor settings
 /.idea/
+
+# Claude Code (local only)
+/.claude/
