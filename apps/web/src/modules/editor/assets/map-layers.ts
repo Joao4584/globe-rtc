@@ -11,23 +11,26 @@ export type MapLayer = {
   mode: LayerMode;
   visible: boolean;
   locked: boolean;
-  /** Art layers only: where this layer has tiles is ground where players can walk and spawn. */
+  /** Set on the Floor layer only: where it has tiles is ground where players can walk and spawn. */
   floor?: boolean;
 };
 
 // Layers listed bottom to top (the last one is drawn on top).
 export type LayerState = { layers: MapLayer[]; activeId: string };
 
-export type LayerNames = { floor: string; wall: string; objects: string; above: string; collision: string };
+export type LayerNames = { floor: string; wall: string; objects: string; collision: string };
 
-// Mirrors the five layers of the example map (floor, wall, blocks, wall-top, collider).
+// Every map has a Floor (where players walk and spawn) and a Wall layer; they cannot be removed. Objects and the rest can.
+export const PROTECTED_LAYER_IDS = ["floor", "wall"];
+export const isProtectedLayer = (layer: Pick<MapLayer, "id">) => PROTECTED_LAYER_IDS.includes(layer.id);
+
+// A new map starts with floor, wall, objects (sorted with players by y) and collision.
 export function defaultLayers(names: LayerNames): MapLayer[] {
   const base = { visible: true, locked: false };
   return [
     { id: "floor", name: names.floor, type: "art", mode: "below", floor: true, ...base },
     { id: "wall", name: names.wall, type: "art", mode: "below", ...base },
     { id: "objects", name: names.objects, type: "art", mode: "ysort", ...base },
-    { id: "above", name: names.above, type: "art", mode: "above", ...base },
     { id: "collision", name: names.collision, type: "collision", mode: "below", ...base },
   ];
 }
@@ -39,7 +42,7 @@ export interface LayerController {
   setActiveLayer(id: string): void;
   addLayer(type: LayerType, name: string): void;
   renameLayer(id: string, name: string): void;
-  updateLayer(id: string, patch: Partial<Pick<MapLayer, "mode" | "visible" | "locked" | "floor">>): void;
+  updateLayer(id: string, patch: Partial<Pick<MapLayer, "mode" | "visible" | "locked">>): void;
   /** direction 1 = towards the top of the stack, -1 = towards the bottom */
   moveLayer(id: string, direction: 1 | -1): void;
   removeLayer(id: string): void;

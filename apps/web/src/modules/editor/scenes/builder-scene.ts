@@ -1,6 +1,6 @@
 import * as Phaser from "phaser";
 import { TILE, getItem, itemKey, type Brush, type MapItem } from "../assets/map-assets";
-import { newLayerId, type LayerController, type LayerState, type LayerType, type MapLayer } from "../assets/map-layers";
+import { isProtectedLayer, newLayerId, type LayerController, type LayerState, type LayerType, type MapLayer } from "../assets/map-layers";
 import { parseMap, serializeMap, type MapData, type PlacedRecord } from "../assets/map-data";
 
 export const BUILDER_SCENE_KEY = "builder";
@@ -12,6 +12,7 @@ const LAYER_BAND = 2_000_000;
 const BAND_OFFSET = 500_000;
 const TOP_DEPTH = 9_000_000_000;
 const COLLISION_COLOR = 0xef4444;
+const PROTECTED = ["floor", "wall"];
 
 export type CursorTile = { x: number; y: number } | null;
 
@@ -180,6 +181,7 @@ export class BuilderScene extends Phaser.Scene implements BuilderController {
 
   removeLayer(id: string) {
     if (this.layers.length <= 1) return;
+    if (PROTECTED.includes(id)) return;
     const index = this.layers.findIndex((item) => item.id === id);
     if (index < 0) return;
     this.checkpoint();
@@ -550,11 +552,23 @@ export class BuilderScene extends Phaser.Scene implements BuilderController {
     this.setDirty(true);
   }
 
+  // Floor and Wall always exist: a saved map that lost them (older saves) gets them back at the bottom.
+  private withProtectedLayers(layers: MapLayer[]) {
+    const result = [...layers];
+    const defaults = this.options.defaultLayers.filter(isProtectedLayer);
+    let at = 0;
+    for (const layer of defaults) {
+      if (!result.some((item) => item.id === layer.id)) result.splice(at, 0, { ...layer });
+      at = result.findIndex((item) => item.id === layer.id) + 1;
+    }
+    return result;
+  }
+
   private restore() {
     const source = parseMap(this.options.initialData);
     if (!source) return;
     if (source.layers?.length) {
-      this.layers = source.layers;
+      this.layers = this.withProtectedLayers(source.layers);
       this.activeId = source.layers.some((layer) => layer.id === source.activeId) ? (source.activeId as string) : source.layers[0].id;
     }
 

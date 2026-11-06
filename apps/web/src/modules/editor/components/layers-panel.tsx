@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import { ChevronDown, ChevronUp, Eye, EyeOff, Footprints, Lock, Plus, Square, Trash2, Unlock } from "lucide-react";
+import { ChevronDown, ChevronUp, Eye, EyeOff, Lock, Plus, Square, Trash2, Unlock } from "lucide-react";
 import { useI18n } from "@/locales/client";
 import { cn } from "@/modules/shared/utils";
-import type { LayerController, LayerMode, LayerState, MapLayer } from "../assets/map-layers";
+import { isProtectedLayer, type LayerController, type LayerMode, type LayerState, type MapLayer } from "../assets/map-layers";
 import { ui } from "../ui/theme";
 
 type LayersPanelProps = {
@@ -75,16 +75,6 @@ export function LayersPanel({ state, controller }: LayersPanelProps) {
                 >
                   {layer.locked ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
                 </button>
-                {layer.type === "art" ? (
-                  <button
-                    type="button"
-                    className={cn(iconButton, layer.floor ? "text-emerald-500" : "opacity-40")}
-                    title={layer.floor ? t("dashboard.editor.builder.layers.floorOn") : t("dashboard.editor.builder.layers.floorOff")}
-                    onClick={() => controller.updateLayer(layer.id, { floor: !layer.floor })}
-                  >
-                    <Footprints className="h-4 w-4" />
-                  </button>
-                ) : null}
                 {layer.type === "collision" ? <Square className="h-3.5 w-3.5 shrink-0 fill-red-500/60 text-red-400" /> : null}
 
                 {renaming === layer.id ? (
@@ -120,9 +110,13 @@ export function LayersPanel({ state, controller }: LayersPanelProps) {
                 <button type="button" className={iconButton} disabled={index === 0} title={t("dashboard.editor.builder.layers.down")} onClick={() => controller.moveLayer(layer.id, -1)}>
                   <ChevronDown className="h-4 w-4" />
                 </button>
-                <button type="button" className={iconButton} disabled={state.layers.length <= 1} title={t("dashboard.editor.builder.layers.remove")} onClick={() => remove(layer)}>
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                {isProtectedLayer(layer) ? (
+                  <Lock className="mx-1 h-3.5 w-3.5 opacity-40" aria-label={t("dashboard.editor.builder.layers.protected")} />
+                ) : (
+                  <button type="button" className={iconButton} disabled={state.layers.length <= 1} title={t("dashboard.editor.builder.layers.remove")} onClick={() => remove(layer)}>
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                )}
               </div>
               {layer.type === "art" ? (
                 <select

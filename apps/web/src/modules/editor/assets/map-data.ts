@@ -74,7 +74,8 @@ function parseLayer(raw: unknown): MapLayer | null {
   const type: LayerType = raw.type === "collision" ? "collision" : "art";
   const mode: LayerMode = raw.mode === "ysort" || raw.mode === "above" ? raw.mode : "below";
   const layer: MapLayer = { id: raw.id, name: typeof raw.name === "string" ? raw.name : raw.id, type, mode, visible: raw.visible !== false, locked: raw.locked === true };
-  if (type === "art" && raw.floor === true) layer.floor = true;
+  // The Floor layer is always the ground (older saves may lack the flag).
+  if (type === "art" && (raw.floor === true || raw.id === "floor")) layer.floor = true;
   return layer;
 }
 

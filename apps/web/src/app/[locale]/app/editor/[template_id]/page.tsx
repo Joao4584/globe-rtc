@@ -42,7 +42,6 @@ export default function Page() {
         floor: t("dashboard.editor.builder.layers.defaultFloor"),
         wall: t("dashboard.editor.builder.layers.defaultWall"),
         objects: t("dashboard.editor.builder.layers.defaultObjects"),
-        above: t("dashboard.editor.builder.layers.defaultAbove"),
         collision: t("dashboard.editor.builder.layers.defaultCollision"),
       }),
     [t],
