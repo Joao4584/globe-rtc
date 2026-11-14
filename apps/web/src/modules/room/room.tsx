@@ -6,6 +6,7 @@ import { useI18n } from "@/locales/client";
 import { useRoomActions } from "./hooks/use-room-actions";
 import { useQueryState } from "nuqs";
 import { ChatCard } from "./components/chat-card";
+import { TouchControls } from "./components/touch-controls";
 import { FocusReturnButton } from "./components/focus-return-button";
 import { NearbyPlayers } from "./components/nearby-players";
 import { PingCard } from "./components/ping-card";
@@ -276,8 +277,8 @@ export default function RoomPage(props: RoomPageProps) {
 
   return (
     <div className="w-full h-full flex justify-center items-center overflow-hidden relative">
-      <div className="pointer-events-none absolute left-4 top-4 z-50 max-w-[55vw] truncate text-sm font-semibold text-slate-700 dark:text-white">
-        <span className="text-slate-500 dark:text-slate-300">{t("room.page.roomLabel")}</span> {props.room.name}
+      <div className="pointer-events-none absolute left-4 top-4 z-50 max-w-[55vw] truncate text-sm font-semibold text-slate-700 max-md:max-w-[42vw] max-md:text-xs dark:text-white">
+        <span className="text-slate-500 max-md:hidden dark:text-slate-300">{t("room.page.roomLabel")}</span> {props.room.name}
       </div>
       {checkingSavedAccessToken ? (
         <div className="flex h-full w-full items-center justify-center p-4">
@@ -310,11 +311,11 @@ export default function RoomPage(props: RoomPageProps) {
               type="button"
               size="sm"
               variant="secondary"
-              className="absolute left-4 top-10 z-50 gap-2"
+              className="absolute left-4 top-10 z-50 gap-2 max-md:top-9 max-md:h-8 max-md:w-8 max-md:px-0"
               onClick={() => setManageOpen(true)}
             >
               <Settings2 className="h-4 w-4" />
-              {t("dashboard.roomManage.open")}
+              <span className="max-md:sr-only">{t("dashboard.roomManage.open")}</span>
             </Button>
           ) : null}
           <ManageRoomDialog roomPublicId={props.room.public_id} open={manageOpen} onOpenChange={setManageOpen} />
@@ -323,6 +324,7 @@ export default function RoomPage(props: RoomPageProps) {
           <NearbyPlayers />
           <InvisibilityCard />
           <ChatCard />
+          <TouchControls />
         </>
       ) : canMountGame ? (
         <div className="flex h-full w-full items-center justify-center p-4">

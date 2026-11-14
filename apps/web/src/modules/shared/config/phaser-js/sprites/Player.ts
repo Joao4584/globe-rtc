@@ -1,4 +1,5 @@
 import * as Phaser from "phaser";
+import { VIRTUAL_DEADZONE, virtualInput } from "../virtual-input";
 import { FALLBACK_SKIN, createSkinAnimations, isCustomSkin, loadSkin, skinAnimKey, skinTextureKey, usableSkin } from "@/modules/room/lib/skin-assets";
 
 type Direction = "up" | "down" | "left" | "right";
@@ -107,28 +108,35 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   update() {
-    const currentSpeed = this.sprintKey.isDown ? this.sprintSpeed : this.baseSpeed;
+    const currentSpeed = this.isSprinting() ? this.sprintSpeed : this.baseSpeed;
     const { left, right, up, down, leftArrow, rightArrow, upArrow, downArrow } = this.cursors;
+    // Touch joystick: the stronger axis wins (movement is 4-directional like the keyboard).
+    const stickX = Math.abs(virtualInput.x) >= Math.abs(virtualInput.y) ? virtualInput.x : 0;
+    const stickY = stickX === 0 ? virtualInput.y : 0;
+    const stickLeft = stickX < -VIRTUAL_DEADZONE;
+    const stickRight = stickX > VIRTUAL_DEADZONE;
+    const stickUp = stickY < -VIRTUAL_DEADZONE;
+    const stickDown = stickY > VIRTUAL_DEADZONE;
 
     this.setVelocity(0);
     this.moving = false;
 
-    if (left.isDown || leftArrow.isDown) {
+    if (left.isDown || leftArrow.isDown || stickLeft) {
       this.lastDirection = "left";
       this.setVelocityX(-currentSpeed);
       this.anims.play(this.animKey("walk", "left"), true);
       this.moving = true;
-    } else if (right.isDown || rightArrow.isDown) {
+    } else if (right.isDown || rightArrow.isDown || stickRight) {
       this.lastDirection = "right";
       this.setVelocityX(currentSpeed);
       this.anims.play(this.animKey("walk", "right"), true);
       this.moving = true;
-    } else if (up.isDown || upArrow.isDown) {
+    } else if (up.isDown || upArrow.isDown || stickUp) {
       this.lastDirection = "up";
       this.setVelocityY(-currentSpeed);
       this.anims.play(this.animKey("walk", "up"), true);
       this.moving = true;
-    } else if (down.isDown || downArrow.isDown) {
+    } else if (down.isDown || downArrow.isDown || stickDown) {
       this.lastDirection = "down";
       this.setVelocityY(currentSpeed);
       this.anims.play(this.animKey("walk", "down"), true);
@@ -160,7 +168,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   isSprinting() {
-    return this.sprintKey.isDown;
+    return this.sprintKey.isDown || virtualInput.sprint;
   }
 
   setSkin(nextSkin: string) {

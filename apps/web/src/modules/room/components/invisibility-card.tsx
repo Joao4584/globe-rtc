@@ -9,7 +9,7 @@ export function InvisibilityCard() {
   const toggleInvisibleMode = useRoomUiStore((s) => s.toggleInvisibleMode);
 
   return (
-    <div className="absolute bottom-4 left-32 z-50 rounded-lg border border-sky-200/80 bg-white/85 px-3 py-2 shadow-lg backdrop-blur-sm dark:border-slate-700/60 dark:bg-slate-900/80">
+    <div className="absolute bottom-4 left-32 z-50 max-md:bottom-auto max-md:left-auto max-md:right-[5.25rem] max-md:top-3 max-md:px-2 max-md:py-1 rounded-lg border border-sky-200/80 bg-white/85 px-3 py-2 shadow-lg backdrop-blur-sm dark:border-slate-700/60 dark:bg-slate-900/80">
       <button
         type="button"
         onClick={toggleInvisibleMode}
@@ -17,7 +17,7 @@ export function InvisibilityCard() {
         aria-pressed={invisibleMode}
         title={invisibleMode ? t("room.invisibility.titleDisable") : t("room.invisibility.titleEnable")}
       >
-        <span className="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">{t("room.invisibility.label")}</span>
+        <span className="text-[11px] uppercase tracking-wide text-slate-500 max-md:hidden dark:text-slate-400">{t("room.invisibility.label")}</span>
         <span
           className={[
             "rounded-md border px-2 py-0.5 text-xs font-semibold transition-colors",

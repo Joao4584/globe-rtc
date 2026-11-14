@@ -505,6 +505,8 @@ export default {
       checking: "Verificando...",
     },
     chat: {
+      open: "Abrir chat",
+      close: "Fechar chat",
       placeholder: "Mensagem",
       send: "Enviar",
     },

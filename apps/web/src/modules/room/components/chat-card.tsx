@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { SendHorizontal } from "lucide-react";
+import { MessageCircle, SendHorizontal, X } from "lucide-react";
 import { useI18n } from "@/locales/client";
+import { useIsMobile } from "@/modules/shared/hooks/use-mobile";
 import { CHAT_MESSAGE_MAX_CHARS } from "@/modules/shared/config/phaser-js/chat-config";
 import { useRoomActions } from "../hooks/use-room-actions";
 import { useRoomStore } from "../stores/room-store";
@@ -28,6 +29,16 @@ export function ChatCard() {
   // The top fade only shows once there are more lines than fit (a short log must not start faded).
   const [overflowing, setOverflowing] = useState(false);
   const counter = useRef(0);
+  // Phones: the chat is a round button; tapping it opens the log and the input.
+  const isMobile = useIsMobile();
+  const [open, setOpen] = useState(false);
+  const [unread, setUnread] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const collapsed = isMobile && !open;
+  const collapsedRef = useRef(collapsed);
+  collapsedRef.current = collapsed;
+  const selfIdRef = useRef<string | undefined>(undefined);
+  selfIdRef.current = room?.sessionId;
 
   useEffect(() => {
     if (!room) return;
@@ -42,6 +53,7 @@ export function ChatCard() {
         text: payload.text,
       };
       setLines((current) => [...current.slice(-(MAX_LINES - 1)), line]);
+      if (collapsedRef.current && line.id !== selfIdRef.current) setUnread((count) => count + 1);
     });
     return () => {
       if (typeof off === "function") off();
@@ -57,6 +69,26 @@ export function ChatCard() {
   }, [lines]);
 
   const selfId = room?.sessionId;
+
+  if (collapsed) {
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          setOpen(true);
+          setUnread(0);
+          window.setTimeout(() => inputRef.current?.focus(), 50);
+        }}
+        aria-label={t("room.chat.open")}
+        className="absolute bottom-4 right-4 z-50 flex h-12 w-12 items-center justify-center rounded-full border border-white/15 bg-black/50 text-white shadow-lg backdrop-blur-sm active:scale-95"
+      >
+        <MessageCircle className="h-5 w-5" />
+        {unread > 0 ? (
+          <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold">{unread > 9 ? "9+" : unread}</span>
+        ) : null}
+      </button>
+    );
+  }
 
   return (
     <div className="absolute bottom-4 right-4 z-50 w-[320px] max-w-[calc(100vw-2rem)]">
@@ -83,6 +115,7 @@ export function ChatCard() {
 
       <div className="flex items-center gap-1 rounded-md border border-white/10 bg-black/40 p-1 backdrop-blur-sm focus-within:border-white/25 focus-within:bg-black/55">
         <input
+          ref={inputRef}
           value={chatMessage}
           onChange={(e) => setChatMessage(e.target.value.slice(0, CHAT_MESSAGE_MAX_CHARS))}
           maxLength={CHAT_MESSAGE_MAX_CHARS}
@@ -109,6 +142,19 @@ export function ChatCard() {
         >
           <SendHorizontal className="h-4 w-4" />
         </button>
+        {isMobile ? (
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              inputRef.current?.blur();
+            }}
+            aria-label={t("room.chat.close")}
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-white/60 hover:bg-white/10 hover:text-white"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        ) : null}
       </div>
     </div>
   );
