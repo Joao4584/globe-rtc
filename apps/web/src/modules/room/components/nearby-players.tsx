@@ -9,7 +9,7 @@ export function NearbyPlayers() {
 
   if (nearbyPlayers.length === 0) return null;
   return (
-    <div className="absolute bottom-4 left-4 z-50 min-w-[180px] max-md:bottom-auto max-md:left-4 max-md:top-24 max-md:min-w-0 max-md:max-w-[60vw] rounded-md border border-sky-200/80 bg-white/88 px-3 py-2 shadow-xl backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/90">
+    <div className="absolute bottom-4 left-4 z-50 min-w-[180px] max-md:bottom-auto max-md:left-4 max-md:top-[3.75rem] max-md:min-w-0 max-md:max-w-[60vw] rounded-md border border-sky-200/80 bg-white/88 px-3 py-2 shadow-xl backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/90">
       <div className="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">{t("room.nearby.label")}</div>
       <div className="mt-2 flex flex-wrap gap-2">
         {nearbyPlayers.map((name, index) => (

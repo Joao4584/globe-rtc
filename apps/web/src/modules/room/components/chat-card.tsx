@@ -80,7 +80,7 @@ export function ChatCard() {
           window.setTimeout(() => inputRef.current?.focus(), 50);
         }}
         aria-label={t("room.chat.open")}
-        className="absolute bottom-4 right-4 z-50 flex h-12 w-12 items-center justify-center rounded-full border border-white/15 bg-black/50 text-white shadow-lg backdrop-blur-sm active:scale-95"
+        className="pointer-events-auto absolute bottom-4 right-4 z-50 flex h-12 w-12 items-center justify-center rounded-full border border-white/15 bg-black/50 text-white shadow-lg backdrop-blur-sm active:scale-95 max-md:static max-md:h-9 max-md:w-9 max-md:shrink-0 max-md:rounded-lg"
       >
         <MessageCircle className="h-5 w-5" />
         {unread > 0 ? (
@@ -91,7 +91,7 @@ export function ChatCard() {
   }
 
   return (
-    <div className="absolute bottom-4 right-4 z-50 w-[320px] max-w-[calc(100vw-2rem)]">
+    <div className="absolute bottom-4 right-4 z-50 w-[320px] max-w-[calc(100vw-2rem)] max-md:pointer-events-auto max-md:fixed max-md:bottom-[9.5rem]">
       {lines.length > 0 ? (
         <div
           ref={listRef}

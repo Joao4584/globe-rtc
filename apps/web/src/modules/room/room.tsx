@@ -11,7 +11,6 @@ import { FocusReturnButton } from "./components/focus-return-button";
 import { NearbyPlayers } from "./components/nearby-players";
 import { PingCard } from "./components/ping-card";
 import { PlayerInfoCard } from "./components/player-info-card";
-import { InvisibilityCard } from "./components/invisibility-card";
 import { useUser } from "@/modules/profile/hooks/use-user";
 import type { RoomDetail } from "../rooms/services/get-room-detail";
 import { useMySkin } from "@/modules/character/hooks/use-my-skin";
@@ -277,8 +276,29 @@ export default function RoomPage(props: RoomPageProps) {
 
   return (
     <div className="w-full h-full flex justify-center items-center overflow-hidden relative">
-      <div className="pointer-events-none absolute left-4 top-4 z-50 max-w-[55vw] truncate text-sm font-semibold text-slate-700 max-md:max-w-[42vw] max-md:text-xs dark:text-white">
-        <span className="text-slate-500 max-md:hidden dark:text-slate-300">{t("room.page.roomLabel")}</span> {props.room.name}
+      {/* Phones: room name, manage, ping and chat share one row at the top; on desktop each keeps its own corner. */}
+      <div className="contents max-md:pointer-events-none max-md:absolute max-md:inset-x-3 max-md:top-3 max-md:z-50 max-md:flex max-md:items-center max-md:gap-2">
+        <div className="pointer-events-none absolute left-4 top-4 z-50 max-w-[55vw] truncate text-sm font-semibold text-slate-700 max-md:static max-md:min-w-0 max-md:max-w-none max-md:flex-1 max-md:text-xs dark:text-white">
+          <span className="text-slate-500 max-md:hidden dark:text-slate-300">{t("room.page.roomLabel")}</span> {props.room.name}
+        </div>
+        {!checkingSavedAccessToken && canConnectToGame ? (
+          <>
+            {props.room.my_role && props.room.my_role !== "visitor" ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                className="pointer-events-auto absolute left-4 top-10 z-50 gap-2 max-md:static max-md:h-9 max-md:w-9 max-md:shrink-0 max-md:px-0"
+                onClick={() => setManageOpen(true)}
+              >
+                <Settings2 className="h-4 w-4" />
+                <span className="max-md:sr-only">{t("dashboard.roomManage.open")}</span>
+              </Button>
+            ) : null}
+            <PingCard />
+            <ChatCard />
+          </>
+        ) : null}
       </div>
       {checkingSavedAccessToken ? (
         <div className="flex h-full w-full items-center justify-center p-4">
@@ -306,24 +326,9 @@ export default function RoomPage(props: RoomPageProps) {
             />
           </div>
           <FocusReturnButton />
-          {props.room.my_role && props.room.my_role !== "visitor" ? (
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              className="absolute left-4 top-10 z-50 gap-2 max-md:top-9 max-md:h-8 max-md:w-8 max-md:px-0"
-              onClick={() => setManageOpen(true)}
-            >
-              <Settings2 className="h-4 w-4" />
-              <span className="max-md:sr-only">{t("dashboard.roomManage.open")}</span>
-            </Button>
-          ) : null}
           <ManageRoomDialog roomPublicId={props.room.public_id} open={manageOpen} onOpenChange={setManageOpen} />
-          <PingCard />
           <PlayerInfoCard />
           <NearbyPlayers />
-          <InvisibilityCard />
-          <ChatCard />
           <TouchControls />
         </>
       ) : canMountGame ? (
