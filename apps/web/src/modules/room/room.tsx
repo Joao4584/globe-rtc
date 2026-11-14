@@ -277,9 +277,9 @@ export default function RoomPage(props: RoomPageProps) {
   return (
     <div className="w-full h-full flex justify-center items-center overflow-hidden relative">
       {/* Phones: room name, manage, ping and chat share one row at the top; on desktop each keeps its own corner. */}
-      <div className="contents max-md:pointer-events-none max-md:absolute max-md:inset-x-3 max-md:top-3 max-md:z-50 max-md:flex max-md:items-center max-md:gap-2">
-        <div className="pointer-events-none absolute left-4 top-4 z-50 max-w-[55vw] truncate text-sm font-semibold text-slate-700 max-md:static max-md:min-w-0 max-md:max-w-none max-md:flex-1 max-md:text-xs dark:text-white">
-          <span className="text-slate-500 max-md:hidden dark:text-slate-300">{t("room.page.roomLabel")}</span> {props.room.name}
+      <div className="contents mobile:pointer-events-none mobile:absolute mobile:inset-x-3 mobile:top-3 mobile:z-50 mobile:flex mobile:items-center mobile:gap-2">
+        <div className="pointer-events-none absolute left-4 top-4 z-50 max-w-[55vw] truncate text-sm font-semibold text-slate-700 mobile:static mobile:min-w-0 mobile:max-w-none mobile:flex-1 mobile:text-xs dark:text-white">
+          <span className="text-slate-500 mobile:hidden dark:text-slate-300">{t("room.page.roomLabel")}</span> {props.room.name}
         </div>
         {!checkingSavedAccessToken && canConnectToGame ? (
           <>
@@ -288,11 +288,11 @@ export default function RoomPage(props: RoomPageProps) {
                 type="button"
                 size="sm"
                 variant="secondary"
-                className="pointer-events-auto absolute left-4 top-10 z-50 gap-2 max-md:static max-md:h-9 max-md:w-9 max-md:shrink-0 max-md:px-0"
+                className="pointer-events-auto absolute left-4 top-10 z-50 gap-2 mobile:static mobile:h-9 mobile:w-9 mobile:shrink-0 mobile:px-0"
                 onClick={() => setManageOpen(true)}
               >
                 <Settings2 className="h-4 w-4" />
-                <span className="max-md:sr-only">{t("dashboard.roomManage.open")}</span>
+                <span className="mobile:sr-only">{t("dashboard.roomManage.open")}</span>
               </Button>
             ) : null}
             <PingCard />

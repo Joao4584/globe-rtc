@@ -111,7 +111,7 @@ export function PlayerInfoCard() {
   }
 
   return (
-    <aside className="absolute top-4 left-4 z-50 max-md:top-14 w-[280px] max-w-[calc(100vw-2rem)] rounded-xl border border-sky-200/80 bg-white/92 p-3 shadow-[0_16px_40px_-16px_rgba(15,23,42,0.35)] backdrop-blur-sm dark:border-slate-600/60 dark:bg-slate-900/90 dark:shadow-[0_16px_40px_-16px_rgba(0,0,0,0.75)]">
+    <aside className="absolute top-4 left-4 z-50 mobile:top-14 w-[280px] max-w-[calc(100vw-2rem)] rounded-xl border border-sky-200/80 bg-white/92 p-3 shadow-[0_16px_40px_-16px_rgba(15,23,42,0.35)] backdrop-blur-sm dark:border-slate-600/60 dark:bg-slate-900/90 dark:shadow-[0_16px_40px_-16px_rgba(0,0,0,0.75)]">
       <button
         type="button"
         onClick={closeCard}

@@ -33,6 +33,10 @@ const config: Config = {
   		screens: {
   			mxd: {
   				max: '1279px'
+  			},
+  			// Phones (below Tailwind's md): used as mobile:...
+  			mobile: {
+  				max: '767px'
   			}
   		},
   		spacing: {

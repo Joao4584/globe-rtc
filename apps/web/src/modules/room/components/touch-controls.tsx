@@ -47,7 +47,7 @@ export function TouchControls() {
   };
 
   return (
-    <div className="hidden max-md:block [@media(pointer:coarse)]:block">
+    <div className="hidden mobile:block [@media(pointer:coarse)]:block">
       <div
         ref={baseRef}
         role="presentation"
