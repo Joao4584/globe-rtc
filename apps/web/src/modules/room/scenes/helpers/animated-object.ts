@@ -13,6 +13,12 @@ export class AnimatedObject {
   // once-return: when to snap back to the resting frame after the last frame was shown.
   private resetAt = 0;
   private near = false;
+  // Leaving "near" closes the object only after this delay (ms), so it does not flap at the edge.
+  private static readonly LEAVE_DELAY = 1000;
+  private leaveAt = 0;
+  // Door-like sprites (e.g. 8 frames: closed, opening x3, open, closing x3) go "open" at the
+  // middle frame and close by continuing forward until they wrap to frame 0.
+  private readonly cyclic: boolean;
 
   constructor(
     private readonly sprite: Phaser.GameObjects.Sprite,
@@ -20,6 +26,7 @@ export class AnimatedObject {
     private readonly delays: number[],
     private readonly rule: AnimationRule,
   ) {
+    this.cyclic = frames >= 6 && frames % 2 === 0 && delays[0] === delays[frames / 2] && delays[0] > (delays[1] ?? 0);
     if (rule.trigger === "always") {
       this.looping = true;
     } else {
@@ -33,6 +40,7 @@ export class AnimatedObject {
   }
 
   private get away() {
+    if (this.cyclic) return this.frames / 2;
     return this.rule.start === "last" ? 0 : this.frames - 1;
   }
 
@@ -52,7 +60,8 @@ export class AnimatedObject {
       return;
     }
     this.target = target;
-    this.dir = target > this.frame ? 1 : -1;
+    // cyclic sprites close forward, wrapping from the last frame to frame 0
+    this.dir = target > this.frame || (this.cyclic && target === 0 && this.frame >= this.frames / 2) ? 1 : -1;
     this.until = 0;
   }
 
@@ -121,8 +130,14 @@ export class AnimatedObject {
       const isNear = feetX >= x - tile && feetX <= x + width + tile && feetY >= y - tile && feetY <= y + height + tile;
       if (isNear !== this.near) {
         this.near = isNear;
-        if (isNear) this.activate(true);
-        else this.leave();
+        if (isNear) {
+          this.leaveAt = 0;
+          this.activate(true);
+        } else this.leaveAt = time + AnimatedObject.LEAVE_DELAY;
+      }
+      if (this.leaveAt > 0 && time >= this.leaveAt) {
+        this.leaveAt = 0;
+        this.leave();
       }
     }
 
@@ -137,7 +152,7 @@ export class AnimatedObject {
       this.show((this.frame + 1) % this.frames);
       this.until = time + this.delay(this.frame);
     } else if (this.dir !== 0) {
-      this.show(this.frame + this.dir);
+      this.show((this.frame + this.dir + this.frames) % this.frames);
       this.until = time + this.delay(this.frame);
       if (this.frame === this.target) {
         this.dir = 0;
