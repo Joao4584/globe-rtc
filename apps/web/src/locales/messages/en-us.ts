@@ -529,6 +529,13 @@ export default {
       profileInfo: "Profile Information",
       memberSince: "Member since",
       noDescription: "No description yet.",
+      close: "Close",
+      addFriend: "Add friend",
+      requestPending: "Request sent",
+      acceptRequest: "Accept request",
+      friends: "Friends",
+      requestSent: "Friend request sent",
+      requestError: "Could not complete the request",
     },
   },
 } as const;
