@@ -10,7 +10,7 @@ import { getDashboardRoutes, type RouteProps } from "@/modules/workspace/routes/
 const BASE_PATH = "/app";
 
 // The pages of the app as links in the header (there are few of them, so no sidebar).
-export function HeaderNav() {
+export function HeaderNav({ vertical = false }: { vertical?: boolean }) {
   const t = useI18n();
   const pathname = usePathname() ?? "";
   const routes = useMemo(() => {
@@ -26,7 +26,7 @@ export function HeaderNav() {
   const activeSegment = (pathname.split(`${BASE_PATH}/`)[1] ?? "").split("/")[0];
 
   return (
-    <nav className="flex items-center gap-1">
+    <nav className={cn("flex gap-1", vertical ? "flex-col items-stretch" : "items-center")}>
       {routes.map((route) => {
         const active = `/${activeSegment}` === route.path;
         return (
@@ -39,7 +39,7 @@ export function HeaderNav() {
             )}
           >
             <route.icon className="h-4 w-4" />
-            <span className="hidden sm:inline">{route.title}</span>
+            <span className={vertical ? undefined : "hidden sm:inline"}>{route.title}</span>
           </Link>
         );
       })}

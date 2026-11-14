@@ -204,6 +204,7 @@ export default {
       },
     },
     header: {
+      menu: "Menu",
       share: "Share",
       copySuccessTitle: "Link copied",
       copySuccessDescription: "Now just send it to the team.",

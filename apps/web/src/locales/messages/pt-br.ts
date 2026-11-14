@@ -204,6 +204,7 @@ export default {
       },
     },
     header: {
+      menu: "Menu",
       share: "Compartilhar",
       copySuccessTitle: "Link copiado",
       copySuccessDescription: "Agora e so enviar para o time.",

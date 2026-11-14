@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useI18n } from "@/locales/client";
 import { Button } from "@/modules/shared/ui/button";
+import { Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from "@/modules/shared/ui/sheet";
+import { useIsMobile } from "@/modules/shared/hooks/use-mobile";
 import { toast } from "sonner";
-import { AlertCircle, Share2 } from "lucide-react";
+import { AlertCircle, Menu, Share2 } from "lucide-react";
 import Image from "next/image";
 import { FriendsHeaderButton } from "@/modules/friends/components/friends-header/friends-header-button";
 import { CreateRoom } from "@/modules/rooms/components/create-room/create-room";
@@ -21,6 +23,8 @@ export function Header({ onSearch }: HeaderProps) {
   const t = useI18n();
   const [searchQuery, setSearchQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const isMobile = useIsMobile();
   const pathname = usePathname();
   const isRoomRoute = Boolean(pathname?.includes("/app/room/"));
 
@@ -53,6 +57,48 @@ export function Header({ onSearch }: HeaderProps) {
       });
     }
   };
+
+  // Going to another page closes the phone menu.
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
+
+  // Phones: a slim bar (logo + menu button); everything else lives in the menu.
+  if (isMobile) {
+    return (
+      <header className="sticky top-0 z-40 border-b border-border bg-card/70">
+        <div className="flex items-center justify-between gap-3 px-3 py-2">
+          <Image src="/meta-rtc-logo.png" width={84} height={49} alt="Globe RTC" priority />
+          <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+            <SheetTrigger asChild>
+              <Button variant="secondary" size="icon" aria-label={t("dashboard.header.menu")}>
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="flex w-72 flex-col gap-4 overflow-y-auto p-4">
+              <SheetTitle className="sr-only">{t("dashboard.header.menu")}</SheetTitle>
+              <SheetDescription className="sr-only">{t("dashboard.header.menu")}</SheetDescription>
+              <div className="pt-6">
+                <UserProfileHeader />
+              </div>
+              <CreateRoom />
+              <HeaderNav vertical />
+              <div className="flex flex-col gap-2">
+                {isRoomRoute && (
+                  <Button variant="secondary" size="sm" onClick={handleShareRoom}>
+                    <Share2 />
+                    {t("dashboard.header.share")}
+                  </Button>
+                )}
+                <CharacterDialog />
+              </div>
+            </SheetContent>
+          </Sheet>
+          <FriendsHeaderButton />
+        </div>
+      </header>
+    );
+  }
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-card/70">
