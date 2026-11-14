@@ -69,6 +69,8 @@ export function Header({ onSearch }: HeaderProps) {
       <header className="sticky top-0 z-40 border-b border-border bg-card/70">
         <div className="flex items-center justify-between gap-3 px-3 py-2">
           <Image src="/meta-rtc-logo.png" width={84} height={49} alt="Globe RTC" priority />
+          <div className="flex items-center gap-2">
+            <FriendsHeaderButton />
           <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
             <SheetTrigger asChild>
               <Button variant="secondary" size="icon" aria-label={t("dashboard.header.menu")}>
@@ -94,7 +96,7 @@ export function Header({ onSearch }: HeaderProps) {
               </div>
             </SheetContent>
           </Sheet>
-          <FriendsHeaderButton />
+          </div>
         </div>
       </header>
     );

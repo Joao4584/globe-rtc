@@ -69,7 +69,7 @@ export function FriendsHeaderButton() {
             exit={{ opacity: 0, y: -8, scale: 0.97, transition: { duration: 0.1 } }}
             transition={{ type: "spring", stiffness: 420, damping: 32 }}
             style={{ transformOrigin: "top right", height: "min(560px, 70vh)", maxWidth: "calc(100vw - 2rem)" }}
-            className="absolute right-0 top-full z-50 mt-2 flex w-[380px] flex-col overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-lg shadow-black/20 dark:border-white/10"
+            className="absolute right-0 top-full z-50 mt-2 flex w-[380px] flex-col mobile:fixed mobile:inset-x-3 mobile:top-14 mobile:mt-0 mobile:w-auto overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-lg shadow-black/20 dark:border-white/10"
           >
             <div className="flex items-start justify-between gap-2 border-b border-border px-4 py-3">
               <div className="min-w-0">
