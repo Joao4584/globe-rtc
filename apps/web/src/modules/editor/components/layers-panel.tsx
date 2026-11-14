@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronUp, Eye, EyeOff, Lock, Plus, Square, Trash2, Unlock } from "lucide-react";
+import { ChevronDown, ChevronUp, Eye, EyeOff, Info, Lock, Plus, Square, Trash2, Unlock } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/modules/shared/ui/popover";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/modules/shared/ui/tooltip";
 import { useI18n } from "@/locales/client";
 import { cn } from "@/modules/shared/utils";
 import { isProtectedLayer, layerAccepts, type LayerController, type LayerState, type MapLayer } from "../assets/map-layers";
@@ -49,6 +51,24 @@ export function LayersPanel({ state, controller, selection = null }: LayersPanel
     <div className={cn("absolute left-3 top-32 z-10 w-72 shadow-xl", ui.panel)}>
       <div className={cn("flex items-center gap-1 border-b px-2 py-1.5", ui.divider)}>
         <span className={ui.label}>{t("dashboard.editor.builder.layers.title")}</span>
+        <Popover>
+          <PopoverTrigger asChild>
+            <button type="button" className={cn("p-0.5", ui.ghost)} aria-label={t("dashboard.editor.builder.layers.helpButton")}>
+              <Info className="h-3.5 w-3.5" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className={cn("z-[80] w-64 p-3 text-xs", ui.panel)}>
+            <p className="mb-1.5 text-sm font-semibold">{t("dashboard.editor.builder.layers.helpTitle")}</p>
+            <ul className="list-disc space-y-1 pl-4 leading-snug">
+              <li>{t("dashboard.editor.builder.layers.helpItem1")}</li>
+              <li>{t("dashboard.editor.builder.layers.helpItem2")}</li>
+              <li>{t("dashboard.editor.builder.layers.helpItem3")}</li>
+              <li>{t("dashboard.editor.builder.layers.helpItem4")}</li>
+              <li>{t("dashboard.editor.builder.layers.helpItem5")}</li>
+              <li>{t("dashboard.editor.builder.layers.helpItem6")}</li>
+            </ul>
+          </PopoverContent>
+        </Popover>
         <button
           type="button"
           className={cn("ml-auto inline-flex items-center gap-1 px-2 py-1 text-xs", ui.ghost)}
@@ -108,15 +128,23 @@ export function LayersPanel({ state, controller, selection = null }: LayersPanel
                     }}
                   />
                 ) : (
-                  <button
-                    type="button"
-                    className={cn("mx-1 min-w-0 flex-1 truncate text-left text-sm", !layer.visible && "text-slate-400 line-through dark:text-slate-500")}
-                    title={t("dashboard.editor.builder.layers.renameHint")}
-                    onClick={() => controller.setActiveLayer(layer.id)}
-                    onDoubleClick={() => setRenaming(layer.id)}
-                  >
-                    {layer.name}
-                  </button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        className={cn("mx-1 min-w-0 flex-1 truncate text-left text-sm", !layer.visible && "text-slate-400 line-through dark:text-slate-500")}
+                        onClick={() => controller.setActiveLayer(layer.id)}
+                        onDoubleClick={() => setRenaming(layer.id)}
+                      >
+                        {layer.name}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" sideOffset={8} className="z-[80]">
+                      {layer.type === "art"
+                        ? t(`dashboard.editor.builder.layers.accepts.${layerAccepts(layer)}` as "dashboard.editor.builder.layers.accepts.floor")
+                        : t("dashboard.editor.builder.layers.collisionInfo")}
+                    </TooltipContent>
+                  </Tooltip>
                 )}
 
                 <button type="button" className={iconButton} disabled={index === top} title={t("dashboard.editor.builder.layers.up")} onClick={() => controller.moveLayer(layer.id, 1)}>
@@ -133,11 +161,6 @@ export function LayersPanel({ state, controller, selection = null }: LayersPanel
                   </button>
                 )}
               </div>
-              {layer.type === "art" ? (
-                <p className={cn("ml-1 mt-0.5 text-[10px] leading-tight", ui.muted)}>
-                  {t(`dashboard.editor.builder.layers.accepts.${layerAccepts(layer)}` as "dashboard.editor.builder.layers.accepts.floor")}
-                </p>
-              ) : null}
             </li>
           );
         })}
@@ -162,7 +185,6 @@ export function LayersPanel({ state, controller, selection = null }: LayersPanel
           <p className={cn("mt-1 text-xs", ui.muted)}>{t("dashboard.editor.builder.layers.selectedNone")}</p>
         )}
       </div>
-      <p className={cn("border-t px-2 py-1.5 text-[11px] leading-snug", ui.divider, ui.muted)}>{t("dashboard.editor.builder.layers.help")}</p>
     </div>
   );
 }
