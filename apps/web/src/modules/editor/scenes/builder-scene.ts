@@ -1,7 +1,8 @@
 import * as Phaser from "phaser";
 import { TILE, getItem, itemKey, type Brush, type MapItem } from "../assets/map-assets";
 import { acceptsKind, isProtectedLayer, newLayerId, type LayerController, type LayerState, type LayerType, type MapLayer } from "../assets/map-layers";
-import { parseMap, serializeMap, type MapData, type PlacedRecord } from "../assets/map-data";
+import { itemRef, parseMap, serializeMap, type MapData, type PlacedRecord } from "../assets/map-data";
+import { ruleKey, type MapRule, type ObjectRule } from "../assets/object-rules";
 
 export const BUILDER_SCENE_KEY = "builder";
 export { TILE as TILE_SIZE };
@@ -47,6 +48,8 @@ export type SelectedObject = {
   /** Picture of the object (frame 0 for animated ones). */
   preview: HTMLCanvasElement;
   animated: boolean;
+  /** The rule set on it (animated objects only), null when it has none. */
+  rule: ObjectRule | null;
 };
 
 export type HistoryState = { canUndo: boolean; canRedo: boolean };
@@ -58,13 +61,15 @@ export interface BuilderController extends LayerController {
   markSaved(): void;
   undo(): void;
   redo(): void;
+  /** Sets (or clears, with null) the rule of the selected object. */
+  setSelectedRule(rule: ObjectRule | null): void;
 }
 
 type Placed = PlacedRecord;
 type Visual = Phaser.GameObjects.Image | Phaser.GameObjects.Rectangle;
 type Entry = { rec: Placed; item: MapItem | null; visual: Visual };
 // The whole editable state, taken before each action (a drag stroke counts as one action).
-type Snapshot = { layers: MapLayer[]; activeId: string; entries: { rec: Placed; item: MapItem | null }[] };
+type Snapshot = { layers: MapLayer[]; activeId: string; entries: { rec: Placed; item: MapItem | null }[]; rules: [string, ObjectRule][] };
 
 // Map-building canvas: black background, an endless 32px grid whose origin (0,0) is the map centre, a stack of layers
 // and a brush that follows the mouse. Left click places on the active layer, right click erases from it, middle button
@@ -94,6 +99,8 @@ export class BuilderScene extends Phaser.Scene implements BuilderController {
   private playing: { entry: Entry; frame: number; until: number } | null = null;
   // Object picked with the empty hand and the outline drawn around it.
   private selectedKey: string | null = null;
+  // Rules of placed objects, by ruleKey (layer + ref + cell).
+  private rules = new Map<string, ObjectRule>();
   private selectionBox!: Phaser.GameObjects.Rectangle;
 
   constructor(private readonly options: BuilderSceneOptions) {
@@ -488,12 +495,51 @@ export class BuilderScene extends Phaser.Scene implements BuilderController {
     if (!entry) return false;
     if (this.selectedKey === key) this.select(null);
     if (this.playing?.entry === entry) this.playing = null;
+    this.rules.delete(this.ruleKeyOf(entry));
     entry.visual.destroy();
     this.entries.delete(key);
     return true;
   }
 
   // ---- selection ----
+
+  private ruleKeyOf(entry: Entry) {
+    const { rec } = entry;
+    return rec.kind === "collision" ? "" : ruleKey(rec.layer, itemRef(rec.kind, rec.id), rec.x, rec.y);
+  }
+
+  setSelectedRule(rule: ObjectRule | null) {
+    const entry = this.selectedEntry();
+    if (!entry?.item?.animation) return;
+    this.checkpoint();
+    const key = this.ruleKeyOf(entry);
+    if (rule) this.rules.set(key, { ...rule });
+    else this.rules.delete(key);
+    this.markChanged();
+    this.emitSelection();
+  }
+
+  private emitSelection() {
+    const entry = this.selectedEntry();
+    if (!entry?.item) {
+      this.options.onSelectionChange?.(null);
+      return;
+    }
+    const { item, rec } = entry;
+    this.options.onSelectionChange?.({
+      key: this.selectedKey as string,
+      kind: rec.kind,
+      id: rec.id,
+      layerId: rec.layer,
+      x: rec.x,
+      y: rec.y,
+      width: item.width,
+      height: item.height,
+      preview: item.canvas,
+      animated: Boolean(item.animation),
+      rule: this.rules.get(this.ruleKeyOf(entry)) ?? null,
+    });
+  }
 
   private selectedEntry() {
     return this.selectedKey ? (this.entries.get(this.selectedKey) ?? null) : null;
@@ -526,20 +572,9 @@ export class BuilderScene extends Phaser.Scene implements BuilderController {
       this.options.onSelectionChange?.(null);
       return;
     }
-    const { item, rec, visual } = entry;
+    const { item, visual } = entry;
     this.selectionBox.setPosition(visual.x, visual.y).setSize(item.width, item.height).setVisible(true);
-    this.options.onSelectionChange?.({
-      key: key as string,
-      kind: rec.kind,
-      id: rec.id,
-      layerId: rec.layer,
-      x: rec.x,
-      y: rec.y,
-      width: item.width,
-      height: item.height,
-      preview: item.canvas,
-      animated: Boolean(item.animation),
-    });
+    this.emitSelection();
   }
 
   // Right click: removes the front-most thing of the active layer under the cell (a block of objects or a tile).
@@ -571,6 +606,7 @@ export class BuilderScene extends Phaser.Scene implements BuilderController {
       layers: this.layers.map((layer) => ({ ...layer })),
       activeId: this.activeId,
       entries: [...this.entries.values()].map((entry) => ({ rec: { ...entry.rec }, item: entry.item })),
+      rules: [...this.rules].map(([key, rule]): [string, ObjectRule] => [key, { ...rule }]),
     };
   }
 
@@ -604,6 +640,7 @@ export class BuilderScene extends Phaser.Scene implements BuilderController {
       if (item) this.addItem(rec.layer, item, rec.x, rec.y, rec.seq, rec.flat);
       else this.addCollision(rec.layer, rec.x, rec.y, rec.seq);
     }
+    this.rules = new Map(snapshot.rules.map(([key, rule]): [string, ObjectRule] => [key, { ...rule }]));
     this.refreshDepths();
     this.rebuildGhost();
     this.emitLayers();
@@ -634,7 +671,15 @@ export class BuilderScene extends Phaser.Scene implements BuilderController {
   /** The whole map in the saved format (v3). */
   serialize(): MapData {
     const records = [...this.entries.values()].map((entry) => entry.rec).concat(this.pending);
-    return serializeMap(this.layers, records, this.activeId);
+    // Only rules of objects that still exist (placed or still loading) are saved.
+    const rules: MapRule[] = [];
+    for (const rec of records) {
+      if (rec.kind === "collision") continue;
+      const ref = itemRef(rec.kind, rec.id);
+      const rule = this.rules.get(ruleKey(rec.layer, ref, rec.x, rec.y));
+      if (rule) rules.push({ ...rule, layer: rec.layer, ref, x: rec.x, y: rec.y });
+    }
+    return serializeMap(this.layers, records, this.activeId, rules);
   }
 
   /** The page saved the current state to the database: nothing is unsaved anymore. */
@@ -680,6 +725,10 @@ export class BuilderScene extends Phaser.Scene implements BuilderController {
     const known = new Set(this.layers.map((layer) => layer.id));
     const records: Placed[] = source.records.map((rec, index) => ({ ...rec, seq: index + 1 }));
     this.seq = records.length;
+    for (const rule of source.rules) {
+      const { layer, ref, x, y, ...rest } = rule;
+      this.rules.set(ruleKey(layer, ref, x, y), rest);
+    }
 
     for (const rec of records) {
       if (rec.kind === "collision") {

@@ -1,6 +1,8 @@
 import * as Phaser from "phaser";
 import { TILE, getItem, itemKey, type ItemKind, type MapItem } from "@/modules/editor/assets/map-assets";
-import { parseMap } from "@/modules/editor/assets/map-data";
+import { itemRef, parseMap } from "@/modules/editor/assets/map-data";
+import { ruleKey, type AnimationRule } from "@/modules/editor/assets/object-rules";
+import { AnimatedObject } from "../scenes/helpers/animated-object";
 import type { LayerMode } from "@/modules/editor/assets/map-layers";
 
 // A map saved by the editor (format v3, see .claude/docs/map-format.md) turned into what the game scene needs.
@@ -14,7 +16,7 @@ const SEARCH_RADIUS = 8;
 // object's sorting line is moved up by that distance: the player passes behind it only while the feet are above its base.
 const PLAYER_FEET_OFFSET = 32;
 
-export type TemplateDrawable = { item: MapItem; x: number; y: number; depth: number; mode: LayerMode; layer: number };
+export type TemplateDrawable = { item: MapItem; x: number; y: number; depth: number; mode: LayerMode; layer: number; rule?: AnimationRule };
 
 export type TemplateMapData = {
   drawables: TemplateDrawable[];
@@ -37,6 +39,7 @@ export async function prepareTemplateMap(raw: unknown): Promise<TemplateMapData 
   const layerById = new Map(layers.map((layer) => [layer.id, layer]));
   const floorLayers = new Set(layers.filter((layer) => layer.type === "art" && layer.floor).map((layer) => layer.id));
 
+  const rules = new Map(parsed.rules.map((rule) => [ruleKey(rule.layer, rule.ref, rule.x, rule.y), rule]));
   const artRecords = parsed.records.filter((rec) => rec.kind !== "collision" && layerById.get(rec.layer)?.type === "art");
   const loaded = await Promise.all(
     artRecords.map((rec, seq) =>
@@ -76,7 +79,8 @@ export async function prepareTemplateMap(raw: unknown): Promise<TemplateMapData 
         : mode === "above"
           ? ABOVE_BASE + index * LAYER_STEP + seq
           : y + item.height - PLAYER_FEET_OFFSET + index * 0.01 + seq * 1e-7;
-    drawables.push({ item, x, y, depth, mode, layer: index });
+    const rule = item.animation ? rules.get(ruleKey(rec.layer, itemRef(rec.kind as ItemKind, rec.id), rec.x, rec.y)) : undefined;
+    drawables.push({ item, x, y, depth, mode, layer: index, ...(rule?.type === "animation" ? { rule } : {}) });
   }
 
   if (!drawables.length) return null;
@@ -201,32 +205,29 @@ function bakeLayer(scene: Phaser.Scene, layerKey: string, drawables: TemplateDra
 const BLANK_KEY = "tpl-blank";
 
 // Animated objects are never baked (a baked layer is a still picture): each one is its own image playing a looping
-// animation made of the frames of its strip, with the delay of every frame from the manifest.
-function addAnimated(scene: Phaser.Scene, drawable: TemplateDrawable) {
+// animation made of the frames of its strip, with the delay of every frame from the manifest. An AnimatedObject steps
+// the frames following the object's rule (no rule: loops all the time).
+function addAnimated(scene: Phaser.Scene, drawable: TemplateDrawable): AnimatedObject | null {
   const animation = drawable.item.animation;
-  if (!animation) return;
+  if (!animation) return null;
   const textureKey = `tpl-strip:${itemKey(drawable.item)}`;
-  const animKey = `tpl-anim:${itemKey(drawable.item)}`;
   if (!scene.textures.exists(textureKey)) {
     const texture = scene.textures.addCanvas(textureKey, animation.strip);
     if (texture) for (let i = 0; i < animation.frames; i++) texture.add(i, 0, i * animation.frameW, 0, animation.frameW, drawable.item.height);
   }
-  if (!scene.anims.exists(animKey)) {
-    scene.anims.create({
-      key: animKey,
-      frames: animation.delays.slice(0, animation.frames).map((duration, frame) => ({ key: textureKey, frame, duration })),
-      repeat: -1,
-    });
-  }
-  scene.add.sprite(drawable.x, drawable.y, textureKey, 0).setOrigin(0, 0).setDepth(drawable.depth).play(animKey);
+  const sprite = scene.add.sprite(drawable.x, drawable.y, textureKey, 0).setOrigin(0, 0).setDepth(drawable.depth);
+  const rule: AnimationRule = drawable.rule ?? { type: "animation", trigger: "always", mode: "loop", start: "first" };
+  return new AnimatedObject(sprite, animation.frames, animation.delays, rule);
 }
 
 // Adds the map to a scene: pictures, an invisible static body per collision cell. Returns the collider group.
-export function buildTemplateMapInScene(scene: Phaser.Scene, map: TemplateMapData) {
+// `animated` receives the animated objects, which the scene must update every frame.
+export function buildTemplateMapInScene(scene: Phaser.Scene, map: TemplateMapData, animated: AnimatedObject[] = []) {
   const flat = new Map<number, TemplateDrawable[]>();
   for (const drawable of map.drawables) {
     if (drawable.item.animation) {
-      addAnimated(scene, drawable);
+      const object = addAnimated(scene, drawable);
+      if (object) animated.push(object);
     } else if (drawable.mode === "ysort") {
       const key = `tpl:${itemKey(drawable.item)}`;
       if (!scene.textures.exists(key)) scene.textures.addCanvas(key, drawable.item.canvas);

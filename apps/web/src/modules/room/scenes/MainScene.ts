@@ -9,6 +9,7 @@ import { MovementPublisher } from "./helpers/movement-publisher";
 import { LocalPlayerPresence } from "./helpers/local-player-presence";
 import { getSoundManager } from "@/modules/shared/audio/sound-manager";
 import { FALLBACK_SKIN } from "../lib/skin-assets";
+import type { AnimatedObject } from "./helpers/animated-object";
 
 // Cena principal do jogo: monta mapa/jogador local e sincroniza estado em tempo real com a sala.
 export class MainScene extends Phaser.Scene {
@@ -21,6 +22,7 @@ export class MainScene extends Phaser.Scene {
   private localPresence?: LocalPlayerPresence;
   private cleanupZoomControls?: () => void;
   private sounds = getSoundManager();
+  private animatedObjects: AnimatedObject[] = [];
 
   constructor() {
     super({ key: "game" });
@@ -39,7 +41,8 @@ export class MainScene extends Phaser.Scene {
     // Every room renders a map made in the editor; a room without one gets an empty walkable box.
     const templateMap = (this.game.registry.get("template-map") as TemplateMapData | undefined) ?? emptyTemplateMap();
     const walkable = new TemplateWalkable(templateMap);
-    const collideWith = buildTemplateMapInScene(this, templateMap);
+    this.animatedObjects = [];
+    const collideWith = buildTemplateMapInScene(this, templateMap, this.animatedObjects);
     const bounds = new Phaser.Geom.Rectangle(templateMap.bounds.x, templateMap.bounds.y, templateMap.bounds.width, templateMap.bounds.height);
     const spawnFromMap = walkable.randomSpawn();
     this.walkableResolver = walkable;
@@ -92,6 +95,9 @@ export class MainScene extends Phaser.Scene {
     const cam = this.cameras.main;
     cam.setScroll(Math.round(cam.scrollX), Math.round(cam.scrollY));
     this.player.setDepth(this.player.y);
+
+    // The player sprite is 64px tall and stands on its bottom edge.
+    for (const object of this.animatedObjects) object.update(now, this.player.x, this.player.y + 32, 32);
 
     this.localPresence?.update(now);
     this.movementPublisher?.publish(now);

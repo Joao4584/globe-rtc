@@ -156,6 +156,31 @@ export default {
         saved: "Saved",
         saveFailed: "Could not save. Try again.",
         unsavedConfirm: "You have unsaved changes. Leave anyway?",
+        rules: {
+          title: "Animation effect",
+          trigger: "When it plays",
+          mode: "What it does",
+          start: "Rests on",
+          triggers: {
+            always: "Always (loop)",
+            click: "On click",
+            hover: "On mouse hover",
+            near: "When a player is 1 tile away",
+          },
+          modes: {
+            once: "Play once, stay on the last frame",
+            "once-return": "Play once, go back to the start",
+            toggle: "Go to the end, then back",
+            loop: "Loop",
+          },
+          starts: { first: "First frame", last: "Last frame" },
+          hints: {
+            always: "No rule: the animation loops all the time.",
+            click: "Still until a player clicks it. Toggle: each click plays it the other way. Loop: a click turns it on or off.",
+            hover: "Plays while the mouse is over it. Toggle: plays back when the mouse leaves. Loop: loops only while hovered.",
+            near: "Plays when a player gets within 1 tile. Toggle: plays back when the player leaves. Loop: loops only while someone is near.",
+          },
+        },
         palette: {
           open: "Palette",
           drop: "Drop item (Esc)",

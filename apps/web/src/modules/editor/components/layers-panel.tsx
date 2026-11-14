@@ -7,7 +7,9 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/modules/shared/ui/too
 import { useI18n } from "@/locales/client";
 import { cn } from "@/modules/shared/utils";
 import { isProtectedLayer, layerAccepts, type LayerController, type LayerState, type MapLayer } from "../assets/map-layers";
+import type { ObjectRule } from "../assets/object-rules";
 import type { SelectedObject } from "../scenes/builder-scene";
+import { ObjectRuleCard } from "./object-rule-card";
 import { ui } from "../ui/theme";
 
 type LayersPanelProps = {
@@ -15,6 +17,8 @@ type LayersPanelProps = {
   controller: LayerController;
   /** Object picked with the empty hand (shown in the card under the layers). */
   selection?: SelectedObject | null;
+  /** Sets (or clears) the rule of the selected object. */
+  onRuleChange?: (rule: ObjectRule | null) => void;
 };
 
 // Draws the picked object in a small square, scaled down to fit and kept pixel-sharp.
@@ -36,7 +40,7 @@ function SelectionPreview({ source }: { source: HTMLCanvasElement }) {
 }
 
 // Layer stack of the map, highest layer first. Painting and erasing act on the selected (active) layer.
-export function LayersPanel({ state, controller, selection = null }: LayersPanelProps) {
+export function LayersPanel({ state, controller, selection = null, onRuleChange }: LayersPanelProps) {
   const t = useI18n();
   const [renaming, setRenaming] = useState<string | null>(null);
   const top = state.layers.length - 1;
@@ -48,7 +52,7 @@ export function LayersPanel({ state, controller, selection = null }: LayersPanel
   const iconButton = cn("p-1", ui.ghost);
 
   return (
-    <div className={cn("absolute left-3 top-32 z-10 w-72 shadow-xl", ui.panel)}>
+    <div className={cn("absolute left-3 top-32 z-10 max-h-[calc(100vh-9rem)] w-72 overflow-y-auto shadow-xl", ui.panel)}>
       <div className={cn("flex items-center gap-1 border-b px-2 py-1.5", ui.divider)}>
         <span className={ui.label}>{t("dashboard.editor.builder.layers.title")}</span>
         <Popover>
@@ -185,6 +189,7 @@ export function LayersPanel({ state, controller, selection = null }: LayersPanel
           <p className={cn("mt-1 text-xs", ui.muted)}>{t("dashboard.editor.builder.layers.selectedNone")}</p>
         )}
       </div>
+      {selection && onRuleChange ? <ObjectRuleCard key={selection.key} selection={selection} onChange={onRuleChange} /> : null}
     </div>
   );
 }

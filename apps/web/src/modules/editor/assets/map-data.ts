@@ -1,6 +1,7 @@
 // Saved map format (v3). See .claude/docs/map-format.md. Sparse, ids only, layers bottom to top.
 import type { ItemKind } from "./map-assets";
 import type { LayerMode, LayerType, MapLayer } from "./map-layers";
+import { parseRule, type MapRule } from "./object-rules";
 
 export const MAP_DATA_VERSION = 3;
 
@@ -14,6 +15,8 @@ export type MapData = {
   bounds: MapBounds | null;
   layers: MapDataLayer[];
   activeLayer: string;
+  /** Rules of placed objects (see object-rules.ts). Omitted when there are none. */
+  rules?: MapRule[];
 };
 
 // A placed thing as the editor scene tracks it; `seq` is the placement order.
@@ -22,12 +25,15 @@ export type PlacedRecord = { kind: ItemKind | "collision"; id: string; x: number
 const KIND_PREFIX: Record<ItemKind, string> = { object: "o", animated: "a", wall: "w", floor: "f", border: "b" };
 const PREFIX_KIND: Record<string, ItemKind> = { o: "object", a: "animated", w: "wall", f: "floor", b: "border" };
 
+/** The "<prefix>:<id>" text that names a placed item in the saved map. */
+export const itemRef = (kind: ItemKind, id: string) => `${KIND_PREFIX[kind]}:${id}`;
+
 // Size in tiles of a placed record, for the bounds (the real size lives in the atlas, so the base cell is used).
 function footprint(_rec: PlacedRecord) {
   return { w: 1, h: 1 };
 }
 
-export function serializeMap(layers: MapLayer[], records: PlacedRecord[], activeId: string): MapData {
+export function serializeMap(layers: MapLayer[], records: PlacedRecord[], activeId: string, rules: MapRule[] = []): MapData {
   const firstArt = (layers.find((layer) => layer.type === "art") ?? layers[0]).id;
   const known = new Set(layers.map((layer) => layer.id));
   const ordered = [...records].sort((a, b) => a.seq - b.seq);
@@ -58,6 +64,7 @@ export function serializeMap(layers: MapLayer[], records: PlacedRecord[], active
     bounds: Number.isFinite(bounds.minX) ? bounds : null,
     layers: dataLayers,
     activeLayer: activeId,
+    ...(rules.length ? { rules } : {}),
   };
 }
 
@@ -67,6 +74,7 @@ export type ParsedMap = {
   activeId?: string;
   /** In placement order. `layer` is "" for version 1 records (the scene picks one). */
   records: Omit<PlacedRecord, "seq">[];
+  rules: MapRule[];
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
@@ -109,7 +117,15 @@ export function parseMap(raw: unknown): ParsedMap | null {
         }
       }
     }
-    return layers.length ? { layers, activeId: typeof raw.activeLayer === "string" ? raw.activeLayer : undefined, records } : null;
+    const rules: MapRule[] = [];
+    if (Array.isArray(raw.rules)) {
+      for (const entry of raw.rules) {
+        const rule = parseRule(entry);
+        const at = entry as Record<string, unknown>;
+        if (rule && typeof at.layer === "string" && typeof at.ref === "string" && isNumber(at.x) && isNumber(at.y)) rules.push({ ...rule, layer: at.layer, ref: at.ref, x: at.x, y: at.y });
+      }
+    }
+    return layers.length ? { layers, activeId: typeof raw.activeLayer === "string" ? raw.activeLayer : undefined, records, rules } : null;
   }
 
   if (Array.isArray(raw.placed)) {
@@ -128,6 +144,7 @@ export function parseMap(raw: unknown): ParsedMap | null {
       layers: layers?.length ? layers : null,
       activeId: typeof raw.activeId === "string" ? raw.activeId : undefined,
       records,
+      rules: [],
     };
   }
 

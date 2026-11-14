@@ -116,7 +116,7 @@ export default function Page() {
         />
       )}
       {data ? <MapPalette brush={brush} onBrush={setBrush} /> : null}
-      {layerState && controller ? <LayersPanel state={layerState} controller={controller} selection={selection} /> : null}
+      {layerState && controller ? <LayersPanel state={layerState} controller={controller} selection={selection} onRuleChange={(rule) => controller.setSelectedRule(rule)} /> : null}
 
       <div className={`pointer-events-none absolute left-3 ${BELOW_HEADER} flex items-center gap-3`}>
         <Link

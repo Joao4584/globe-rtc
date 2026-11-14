@@ -8,6 +8,10 @@ const MAX_COORD = 100_000;
 const MAX_TEXT = 200;
 const LAYER_TYPES = ['art', 'collision'];
 const LAYER_MODES = ['below', 'ysort', 'above'];
+const MAX_RULES = 5_000;
+const RULE_TRIGGERS = ['always', 'click', 'hover', 'near'];
+const RULE_MODES = ['once', 'once-return', 'toggle', 'loop'];
+const RULE_STARTS = ['first', 'last'];
 const REF_PATTERN = /^[owfba]:[A-Za-z0-9_]+$/;
 
 const isObject = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -26,6 +30,28 @@ export function validateMapData(data: Record<string, unknown>): void {
   if (data.bounds !== null) {
     const bounds = data.bounds;
     if (!isObject(bounds) || !isCoord(bounds.minX) || !isCoord(bounds.minY) || !isCoord(bounds.maxX) || !isCoord(bounds.maxY)) fail('limites invalidos');
+  }
+
+  if (data.rules !== undefined) {
+    const rules = data.rules;
+    if (!Array.isArray(rules) || rules.length > MAX_RULES) fail('regras invalidas');
+    for (const rule of rules as unknown[]) {
+      if (
+        !isObject(rule) ||
+        rule.type !== 'animation' ||
+        !RULE_TRIGGERS.includes(rule.trigger as string) ||
+        !RULE_MODES.includes(rule.mode as string) ||
+        !RULE_STARTS.includes(rule.start as string) ||
+        typeof rule.layer !== 'string' ||
+        rule.layer.length > MAX_TEXT ||
+        typeof rule.ref !== 'string' ||
+        !REF_PATTERN.test(rule.ref) ||
+        !isCoord(rule.x) ||
+        !isCoord(rule.y)
+      ) {
+        fail('regra invalida');
+      }
+    }
   }
 
   let entries = 0;

@@ -156,6 +156,31 @@ export default {
         saved: "Salvo",
         saveFailed: "Nao foi possivel salvar. Tente de novo.",
         unsavedConfirm: "Voce tem alteracoes nao salvas. Sair mesmo assim?",
+        rules: {
+          title: "Efeito de animacao",
+          trigger: "Quando toca",
+          mode: "O que faz",
+          start: "Fica parado em",
+          triggers: {
+            always: "Sempre (em loop)",
+            click: "Ao clicar",
+            hover: "Ao passar o mouse",
+            near: "Ao chegar a 1 bloco de distancia",
+          },
+          modes: {
+            once: "Toca uma vez e fica no ultimo quadro",
+            "once-return": "Toca uma vez e volta ao inicio",
+            toggle: "Vai ate o fim e depois volta",
+            loop: "Em loop",
+          },
+          starts: { first: "Primeiro quadro", last: "Ultimo quadro" },
+          hints: {
+            always: "Sem regra: a animacao fica em loop o tempo todo.",
+            click: "Fica parado ate o jogador clicar. Vai e volta: cada clique toca no sentido contrario. Loop: o clique liga ou desliga.",
+            hover: "Toca enquanto o mouse esta em cima. Vai e volta: volta quando o mouse sai. Loop: so repete enquanto o mouse esta em cima.",
+            near: "Toca quando um jogador chega a 1 bloco. Vai e volta: volta quando o jogador se afasta. Loop: so repete enquanto alguem esta perto.",
+          },
+        },
         palette: {
           open: "Paleta",
           drop: "Soltar item (Esc)",
