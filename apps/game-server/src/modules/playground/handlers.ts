@@ -88,6 +88,8 @@ export function registerPlaygroundMessageHandlers(room: Room<PlaygroundState>, m
     if (!text) return;
 
     player.message = text;
+    // The chat log of every client (the speech bubble above the player only keeps the last message).
+    room.broadcast("chat_message", { id: client.sessionId, name: player.name, color: player.color, text, at: Date.now() });
 
     const prev = messageTimers.get(client.sessionId);
     if (prev) {
