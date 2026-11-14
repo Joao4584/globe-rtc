@@ -52,6 +52,9 @@ export const BuilderGame: React.FC<BuilderGameProps> = ({ mapId, initialData, de
       parent: containerRef.current,
       backgroundColor: "#000000",
       pixelArt: true,
+      // The editor plays no sound; Phaser's WebAudio manager closes its AudioContext on destroy (React remounts)
+      // and then tries to suspend it: "Cannot suspend a closed AudioContext".
+      audio: { noAudio: true },
       scene: [scene],
       scale: { mode: Phaser.Scale.RESIZE, width: "100%", height: "100%" },
     });
