@@ -30,6 +30,23 @@ export type BuilderSceneOptions = {
   onDirtyChange?: (dirty: boolean) => void;
   /** Whether there is something to undo / redo. */
   onHistoryChange?: (state: HistoryState) => void;
+  /** The creator selected (or deselected) a placed object. */
+  onSelectionChange?: (selection: SelectedObject | null) => void;
+};
+
+/** A placed object picked with the empty hand (one at a time). Rules/scripts will attach to it later. */
+export type SelectedObject = {
+  key: string;
+  kind: string;
+  id: string;
+  layerId: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  /** Picture of the object (frame 0 for animated ones). */
+  preview: HTMLCanvasElement;
+  animated: boolean;
 };
 
 export type HistoryState = { canUndo: boolean; canRedo: boolean };
@@ -75,6 +92,9 @@ export class BuilderScene extends Phaser.Scene implements BuilderController {
   private strokeOpen = false;
   // Animated object under the mouse: it plays its frames while hovered and goes back to frame 0 when left.
   private playing: { entry: Entry; frame: number; until: number } | null = null;
+  // Object picked with the empty hand and the outline drawn around it.
+  private selectedKey: string | null = null;
+  private selectionBox!: Phaser.GameObjects.Rectangle;
 
   constructor(private readonly options: BuilderSceneOptions) {
     super(BUILDER_SCENE_KEY);
@@ -90,7 +110,10 @@ export class BuilderScene extends Phaser.Scene implements BuilderController {
     this.input.mouse?.disableContextMenu();
     this.spaceKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
     this.input.keyboard?.on("keydown-ESC", () => {
-      if (!this.brush) return;
+      if (!this.brush) {
+        this.select(null);
+        return;
+      }
       this.setBrush(null);
       this.options.onBrushClear?.();
     });
@@ -102,6 +125,13 @@ export class BuilderScene extends Phaser.Scene implements BuilderController {
       .setOrigin(0, 0)
       .setStrokeStyle(1, 0x7dd3fc, 1)
       .setDepth(TOP_DEPTH - 1)
+      .setVisible(false);
+
+    this.selectionBox = this.add
+      .rectangle(0, 0, TILE, TILE, 0xfacc15, 0.12)
+      .setOrigin(0, 0)
+      .setStrokeStyle(2, 0xfacc15, 1)
+      .setDepth(TOP_DEPTH - 2)
       .setVisible(false);
 
     this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => this.handlePointer(pointer, true));
@@ -134,6 +164,7 @@ export class BuilderScene extends Phaser.Scene implements BuilderController {
   setActiveLayer(id: string) {
     if (!this.layers.some((layer) => layer.id === id)) return;
     this.activeId = id;
+    this.select(null);
     this.rebuildGhost();
     this.changed();
   }
@@ -166,6 +197,7 @@ export class BuilderScene extends Phaser.Scene implements BuilderController {
     for (const entry of this.entries.values()) {
       if (entry.rec.layer === id) entry.visual.setVisible(layer.visible);
     }
+    if (!layer.visible && this.selectedEntry()?.rec.layer === id) this.select(null);
     this.refreshDepths();
     this.changed();
   }
@@ -280,7 +312,12 @@ export class BuilderScene extends Phaser.Scene implements BuilderController {
           this.erase(cell.x, cell.y);
         } else if (pointer.leftButtonDown()) {
           this.lastActionCell = cellKey;
-          this.place(cell.x, cell.y);
+          // Empty hand on an art layer: a click picks the object under the mouse instead of painting.
+          if (!this.brush && this.activeLayer.type !== "collision") {
+            if (!isMove) this.selectAt(camera.getWorldPoint(pointer.x, pointer.y));
+          } else {
+            this.place(cell.x, cell.y);
+          }
         }
       }
     }
@@ -449,10 +486,60 @@ export class BuilderScene extends Phaser.Scene implements BuilderController {
   private removeEntry(key: string) {
     const entry = this.entries.get(key);
     if (!entry) return false;
+    if (this.selectedKey === key) this.select(null);
     if (this.playing?.entry === entry) this.playing = null;
     entry.visual.destroy();
     this.entries.delete(key);
     return true;
+  }
+
+  // ---- selection ----
+
+  private selectedEntry() {
+    return this.selectedKey ? (this.entries.get(this.selectedKey) ?? null) : null;
+  }
+
+  /** Front-most visible object of the active layer under the point (floor/wall tiles count too). */
+  private selectAt(point: { x: number; y: number }) {
+    const layer = this.activeLayer;
+    if (!layer.visible) {
+      this.select(null);
+      return;
+    }
+    let top: { key: string; depth: number } | null = null;
+    for (const [key, entry] of this.entries) {
+      if (entry.rec.layer !== layer.id || !entry.item) continue;
+      const { x, y } = entry.visual;
+      if (point.x < x || point.x >= x + entry.item.width || point.y < y || point.y >= y + entry.item.height) continue;
+      if (!top || entry.visual.depth > top.depth) top = { key, depth: entry.visual.depth };
+    }
+    this.select(top?.key ?? null);
+  }
+
+  private select(key: string | null) {
+    if (this.selectedKey === key) return;
+    this.selectedKey = key;
+    const entry = this.selectedEntry();
+    if (!entry?.item) {
+      this.selectedKey = null;
+      this.selectionBox.setVisible(false);
+      this.options.onSelectionChange?.(null);
+      return;
+    }
+    const { item, rec, visual } = entry;
+    this.selectionBox.setPosition(visual.x, visual.y).setSize(item.width, item.height).setVisible(true);
+    this.options.onSelectionChange?.({
+      key: key as string,
+      kind: rec.kind,
+      id: rec.id,
+      layerId: rec.layer,
+      x: rec.x,
+      y: rec.y,
+      width: item.width,
+      height: item.height,
+      preview: item.canvas,
+      animated: Boolean(item.animation),
+    });
   }
 
   // Right click: removes the front-most thing of the active layer under the cell (a block of objects or a tile).
@@ -508,6 +595,7 @@ export class BuilderScene extends Phaser.Scene implements BuilderController {
 
   private applySnapshot(snapshot: Snapshot) {
     this.playing = null;
+    this.select(null);
     for (const entry of this.entries.values()) entry.visual.destroy();
     this.entries.clear();
     this.layers = snapshot.layers.map((layer) => ({ ...layer }));

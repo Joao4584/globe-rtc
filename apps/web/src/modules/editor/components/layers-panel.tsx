@@ -1,19 +1,40 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronUp, Eye, EyeOff, Lock, Plus, Square, Trash2, Unlock } from "lucide-react";
 import { useI18n } from "@/locales/client";
 import { cn } from "@/modules/shared/utils";
 import { isProtectedLayer, layerAccepts, type LayerController, type LayerState, type MapLayer } from "../assets/map-layers";
+import type { SelectedObject } from "../scenes/builder-scene";
 import { ui } from "../ui/theme";
 
 type LayersPanelProps = {
   state: LayerState;
   controller: LayerController;
+  /** Object picked with the empty hand (shown in the card under the layers). */
+  selection?: SelectedObject | null;
 };
 
+// Draws the picked object in a small square, scaled down to fit and kept pixel-sharp.
+function SelectionPreview({ source }: { source: HTMLCanvasElement }) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const canvas = ref.current;
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx) return;
+    const size = canvas.width;
+    const scale = Math.min(size / source.width, size / source.height, 4);
+    const w = Math.max(1, Math.round(source.width * scale));
+    const h = Math.max(1, Math.round(source.height * scale));
+    ctx.clearRect(0, 0, size, size);
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(source, Math.round((size - w) / 2), Math.round((size - h) / 2), w, h);
+  }, [source]);
+  return <canvas ref={ref} width={64} height={64} className="h-16 w-16 shrink-0 rounded border border-yellow-400/70 bg-slate-500/10" />;
+}
+
 // Layer stack of the map, highest layer first. Painting and erasing act on the selected (active) layer.
-export function LayersPanel({ state, controller }: LayersPanelProps) {
+export function LayersPanel({ state, controller, selection = null }: LayersPanelProps) {
   const t = useI18n();
   const [renaming, setRenaming] = useState<string | null>(null);
   const top = state.layers.length - 1;
@@ -121,6 +142,26 @@ export function LayersPanel({ state, controller }: LayersPanelProps) {
           );
         })}
       </ul>
+      <div className={cn("border-t px-2 py-1.5", ui.divider)}>
+        <span className={ui.label}>{t("dashboard.editor.builder.layers.selected")}</span>
+        {selection ? (
+          <div className="mt-1 flex items-center gap-2">
+            <SelectionPreview source={selection.preview} />
+            <div className="min-w-0 text-xs">
+              <p className="truncate font-semibold" title={selection.id}>
+                {selection.id}
+              </p>
+              <p className={ui.muted}>
+                {selection.kind}
+                {selection.animated ? " · anim" : ""}
+              </p>
+              <p className={ui.muted}>{t("dashboard.editor.builder.layers.selectedPosition", { x: selection.x, y: selection.y })}</p>
+            </div>
+          </div>
+        ) : (
+          <p className={cn("mt-1 text-xs", ui.muted)}>{t("dashboard.editor.builder.layers.selectedNone")}</p>
+        )}
+      </div>
       <p className={cn("border-t px-2 py-1.5 text-[11px] leading-snug", ui.divider, ui.muted)}>{t("dashboard.editor.builder.layers.help")}</p>
     </div>
   );

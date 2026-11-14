@@ -14,7 +14,7 @@ import { LayersPanel } from "@/modules/editor/components/layers-panel";
 import { defaultLayers, type LayerState } from "@/modules/editor/assets/map-layers";
 import { ui } from "@/modules/editor/ui/theme";
 import type { Brush } from "@/modules/editor/assets/map-assets";
-import type { BuilderController, CursorTile, HistoryState } from "@/modules/editor/scenes/builder-scene";
+import type { BuilderController, CursorTile, HistoryState, SelectedObject } from "@/modules/editor/scenes/builder-scene";
 
 const BuilderGame = dynamic(() => import("@/modules/editor/builder-game").then((mod) => mod.BuilderGame), { ssr: false });
 
@@ -30,6 +30,7 @@ export default function Page() {
   const [brush, setBrush] = useState<Brush | null>(null);
   const [layerState, setLayerState] = useState<LayerState | null>(null);
   const [controller, setController] = useState<BuilderController | null>(null);
+  const [selection, setSelection] = useState<SelectedObject | null>(null);
   const [dirty, setDirty] = useState(false);
   const [history, setHistory] = useState<HistoryState>({ canUndo: false, canRedo: false });
   const [saving, setSaving] = useState(false);
@@ -110,11 +111,12 @@ export default function Page() {
           onLayersChange={setLayerState}
           onDirtyChange={setDirty}
           onHistoryChange={setHistory}
+          onSelectionChange={setSelection}
           onController={setController}
         />
       )}
       {data ? <MapPalette brush={brush} onBrush={setBrush} /> : null}
-      {layerState && controller ? <LayersPanel state={layerState} controller={controller} /> : null}
+      {layerState && controller ? <LayersPanel state={layerState} controller={controller} selection={selection} /> : null}
 
       <div className={`pointer-events-none absolute left-3 ${BELOW_HEADER} flex items-center gap-3`}>
         <Link
