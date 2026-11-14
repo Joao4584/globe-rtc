@@ -271,7 +271,9 @@ export class LocalPlayerPresence {
       outline.setTexture(textureKey, frameName);
       outline.setPosition(this.player.x + offsetX, this.player.y + offsetY);
       outline.setFlip(this.player.flipX, this.player.flipY);
-      outline.setDepth(this.player.y - 0.01);
+      // Relative to the player's own depth: the player depth is set before the physics move, so using y here put the
+      // white outline copies in FRONT of the player while walking down (a white head).
+      outline.setDepth(this.player.depth - 0.01);
     });
   }
 

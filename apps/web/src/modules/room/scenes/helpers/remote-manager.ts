@@ -335,7 +335,7 @@ export class RemoteManager {
       outline.setTexture(textureKey, frameName);
       outline.setPosition(sprite.x + offsetX, sprite.y + offsetY);
       outline.setFlip(sprite.flipX, sprite.flipY);
-      outline.setDepth(sprite.y - 0.01);
+      outline.setDepth(sprite.depth - 0.01);
     });
   }
 
