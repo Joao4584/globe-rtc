@@ -50,6 +50,8 @@ export class MainScene extends Phaser.Scene {
     const walkable = new TemplateWalkable(templateMap);
     this.animatedObjects = [];
     this.seats = templateMap.seats;
+    this.seatOutlines = new Map();
+    this.hoveredSeat = undefined;
     this.sitting = undefined;
     this.input.on(Phaser.Input.Events.POINTER_DOWN, this.onSeatClick);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.input.off(Phaser.Input.Events.POINTER_DOWN, this.onSeatClick));
@@ -130,20 +132,51 @@ export class MainScene extends Phaser.Scene {
 
   // Chairs: clicking an object flagged `sittable` (close enough) sits the local player on it; a move key gets up, towards
   // the side of that key (W up, A left, S down, D right).
+  private seatAt(worldX: number, worldY: number) {
+    if (this.sitting) return undefined;
+    const seat = this.seats.find((s) => worldX >= s.art.x && worldX <= s.art.x + s.art.width && worldY >= s.art.y && worldY <= s.art.y + s.art.height);
+    if (!seat) return undefined;
+    // Only chairs within reach: the click does not teleport the player across the room.
+    const seatX = Phaser.Math.Clamp(this.player.x, seat.x + TILE / 2, seat.x + seat.width - TILE / 2);
+    return Math.hypot(seatX - this.player.x, seat.y + TILE / 2 - (this.player.y + 32)) > SEAT_REACH ? undefined : seat;
+  }
+
   private readonly onSeatClick = (pointer: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[] = []) => {
-    if (this.sitting || over.some((object) => object === this.player || object.getData?.("isPlayerSprite"))) return;
-    const seat = this.seats.find((s) => pointer.worldX >= s.art.x && pointer.worldX <= s.art.x + s.art.width && pointer.worldY >= s.art.y && pointer.worldY <= s.art.y + s.art.height);
+    if (over.some((object) => object === this.player || object.getData?.("isPlayerSprite"))) return;
+    const seat = this.seatAt(pointer.worldX, pointer.worldY);
     if (!seat) return;
     const seatX = Phaser.Math.Clamp(this.player.x, seat.x + TILE / 2, seat.x + seat.width - TILE / 2);
     const seatY = seat.y + TILE / 2;
-    // Only chairs within reach: the click does not teleport the player across the room.
-    if (Math.hypot(seatX - this.player.x, seatY - (this.player.y + 32)) > SEAT_REACH) return;
     this.sitting = { seat, feetX: seatX, feetY: seatY };
     this.player.sit(seatX, seatY - 32, seat.facing);
     this.room?.send("sit", { facing: seat.facing });
   };
 
+  // White outline (like the player's hover) around the chair under the mouse, only when clicking it would sit the player.
+  private seatOutlines = new Map<Seat, Phaser.GameObjects.Sprite[]>();
+  private hoveredSeat?: Seat;
+
+  private updateSeatHover() {
+    const pointer = this.input.activePointer;
+    const seat = this.player.isSitting() ? undefined : this.seatAt(pointer.worldX, pointer.worldY);
+    if (seat === this.hoveredSeat) return;
+    if (this.hoveredSeat) this.seatOutlines.get(this.hoveredSeat)?.forEach((outline) => outline.setVisible(false));
+    this.hoveredSeat = seat;
+    this.input.setDefaultCursor(seat ? "pointer" : "default");
+    if (!seat) return;
+    let outlines = this.seatOutlines.get(seat);
+    if (!outlines) {
+      if (!this.textures.exists(seat.textureKey)) this.textures.addCanvas(seat.textureKey, seat.canvas);
+      outlines = [[-1, 0], [1, 0], [0, -1], [0, 1], [-2, 0], [2, 0], [0, -2], [0, 2]].map(([dx, dy]) =>
+        this.add.image(seat.art.x + dx, seat.art.y + dy, seat.textureKey).setOrigin(0, 0).setTint(0xffffff).setBlendMode(Phaser.BlendModes.ADD).setDepth(seat.artDepth - 0.01),
+      ) as unknown as Phaser.GameObjects.Sprite[];
+      this.seatOutlines.set(seat, outlines);
+    }
+    outlines.forEach((outline) => outline.setVisible(true));
+  }
+
   private updateSeat() {
+    this.updateSeatHover();
     if (!this.sitting) return;
     const { seat, feetX, feetY } = this.sitting;
     const direction = this.player.inputDirection();

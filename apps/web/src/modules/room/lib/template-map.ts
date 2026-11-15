@@ -20,7 +20,7 @@ const PLAYER_FEET_OFFSET = 32;
 export type TemplateDrawable = { item: MapItem; x: number; y: number; depth: number; mode: LayerMode; layer: number; rule?: AnimationRule };
 
 /** A placed object flagged `sittable`: `x/y/width` is its base row (the cells it stands on), in world pixels. */
-export type Seat = { x: number; y: number; width: number; /** the picture of the object, where a click sits the player down */ art: { x: number; y: number; width: number; height: number }; facing: SeatFacing; /** y-sort depth of the object, absent when it is not sorted with the players */ depth?: number };
+export type Seat = { x: number; y: number; width: number; /** the picture of the object, where a click sits the player down */ art: { x: number; y: number; width: number; height: number }; /** picture, to draw the hover outline */ canvas: HTMLCanvasElement; textureKey: string; artDepth: number; facing: SeatFacing; /** y-sort depth of the object, absent when it is not sorted with the players */ depth?: number };
 
 export type TemplateMapData = {
   drawables: TemplateDrawable[];
@@ -89,7 +89,7 @@ export async function prepareTemplateMap(raw: unknown): Promise<TemplateMapData 
     const rule = item.animation ? rules.get(ruleKey(rec.layer, itemRef(rec.kind as ItemKind, rec.id), rec.x, rec.y)) : undefined;
     drawables.push({ item, x, y, depth, mode, layer: index, ...(rule?.type === "animation" ? { rule } : {}) });
     const tag = rec.kind === "object" || rec.kind === "animated" ? objectTags.get(rec.id) : undefined;
-    if (tag?.sittable) seats.push({ x: rec.x * TILE, y: rec.y * TILE, width: item.tilesW * TILE, art: { x, y, width: item.width, height: item.height }, facing: tag.facing, ...(mode === "ysort" ? { depth } : {}) });
+    if (tag?.sittable) seats.push({ x: rec.x * TILE, y: rec.y * TILE, width: item.tilesW * TILE, art: { x, y, width: item.width, height: item.height }, canvas: item.canvas, textureKey: `seat-art:${itemKey(item)}`, artDepth: depth, facing: tag.facing, ...(mode === "ysort" ? { depth } : {}) });
   }
 
   if (!drawables.length) return null;

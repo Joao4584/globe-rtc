@@ -84,9 +84,9 @@ export class RemoteManager {
   private pose(sprite: Phaser.GameObjects.Sprite, player: any, moving: boolean, skin: string) {
     const dir = player.dir ?? "down";
     if (player.sit && !moving) {
-      const facing = player.sit as string;
-      const key = facing === "left" || facing === "right" ? skinSitKey(skin, facing) : "";
-      if (key && this.scene.anims.exists(key)) {
+      const facing = (player.sit === "left" || player.sit === "right" ? player.sit : dir === "left" ? "left" : "right") as "left" | "right";
+      const key = skinSitKey(skin, facing);
+      if (this.scene.anims.exists(key)) {
         sprite.anims.timeScale = 1;
         sprite.anims.play(key, true);
         return;
