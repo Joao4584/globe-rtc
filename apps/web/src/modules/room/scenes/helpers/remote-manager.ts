@@ -84,14 +84,15 @@ export class RemoteManager {
   private pose(sprite: Phaser.GameObjects.Sprite, player: any, moving: boolean, skin: string) {
     const dir = player.dir ?? "down";
     if (player.sit && !moving) {
-      const facing = (player.sit === "left" || player.sit === "right" ? player.sit : dir === "left" ? "left" : "right") as "left" | "right";
-      const key = skinSitKey(skin, facing);
-      if (this.scene.anims.exists(key)) {
+      // Side view = sitting animation; turned to the front/back = idle pose looking that way.
+      const facing = player.sit as "up" | "down" | "left" | "right";
+      const key = facing === "left" || facing === "right" ? skinSitKey(skin, facing) : "";
+      if (key && this.scene.anims.exists(key)) {
         sprite.anims.timeScale = 1;
         sprite.anims.play(key, true);
         return;
       }
-      this.setRemoteAnimation(sprite, facing as "up" | "down" | "left" | "right", false, false, skin);
+      this.setRemoteAnimation(sprite, facing, false, false, skin);
       return;
     }
     this.setRemoteAnimation(sprite, dir, moving, !!player.running, skin);

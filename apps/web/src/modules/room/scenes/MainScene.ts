@@ -29,7 +29,8 @@ export class MainScene extends Phaser.Scene {
   private animatedObjects: AnimatedObject[] = [];
   private seats: Seat[] = [];
   /** The chair the local player is sitting on. */
-  private sitting?: { seat: Seat; feetX: number; feetY: number };
+  /** `prev`: direction held last frame. `tap`: direction pressed last (the same key again gets up). */
+  private sitting?: { seat: Seat; feetX: number; feetY: number; prev: string | null; tap?: string };
 
   constructor() {
     super({ key: "game" });
@@ -147,9 +148,9 @@ export class MainScene extends Phaser.Scene {
     if (!seat) return;
     const seatX = Phaser.Math.Clamp(this.player.x, seat.x + TILE / 2, seat.x + seat.width - TILE / 2);
     const seatY = seat.y + TILE / 2;
-    this.sitting = { seat, feetX: seatX, feetY: seatY };
-    this.player.sit(seatX, seatY - 32, seat.facing);
-    this.room?.send("sit", { facing: seat.facing });
+    this.sitting = { seat, feetX: seatX, feetY: seatY, prev: this.player.inputDirection() };
+    const facing = this.player.sit(seatX, seatY - 32, seat.facing);
+    this.room?.send("sit", { facing });
   };
 
   // White outline (like the player's hover) around the chair under the mouse, only when clicking it would sit the player.
@@ -179,13 +180,21 @@ export class MainScene extends Phaser.Scene {
     this.updateSeatHover();
     if (!this.sitting) return;
     const { seat, feetX, feetY } = this.sitting;
+    // A key press (not a held key) once turns the seated player that way; the same key pressed again gets up towards it.
     const direction = this.player.inputDirection();
-    if (direction) {
-      const step = { left: [-1, 0], right: [1, 0], up: [0, -1], down: [0, 1] }[direction];
-      this.player.standUp(feetX + step[0] * TILE, feetY + step[1] * TILE - 32, direction);
-      this.room?.send("sit", {});
-      this.sitting = undefined;
-      return;
+    const pressed = direction && direction !== this.sitting.prev ? direction : null;
+    this.sitting.prev = direction;
+    if (pressed) {
+      if (this.sitting.tap === pressed) {
+        const step = { left: [-1, 0], right: [1, 0], up: [0, -1], down: [0, 1] }[pressed];
+        this.player.standUp(feetX + step[0] * TILE, feetY + step[1] * TILE - 32, pressed);
+        this.room?.send("sit", {});
+        this.sitting = undefined;
+        return;
+      }
+      this.sitting.tap = pressed;
+      this.player.turnSeated(pressed);
+      this.room?.send("sit", { facing: pressed });
     }
     // Sorted with the chair: in front of it, except a chair that looks away (its back covers the person).
     if (seat.depth !== undefined) this.player.setDepth(seat.depth + (seat.facing === "up" ? -0.5 : 0.5));
