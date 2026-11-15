@@ -165,8 +165,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   /** Gets up and goes to the given spot (centre of the sprite). */
-  standUp(x: number, y: number) {
+  standUp(x: number, y: number, facing: Direction) {
     this.seatedFacing = undefined;
+    this.lastDirection = facing;
     const body = this.body as Phaser.Physics.Arcade.Body;
     body.enable = true;
     body.reset(x, y);

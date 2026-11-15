@@ -12,6 +12,9 @@ import { FALLBACK_SKIN } from "../lib/skin-assets";
 import type { AnimatedObject } from "./helpers/animated-object";
 import { TILE } from "@/modules/editor/assets/map-assets";
 
+// How far (px) a chair may be from the player's feet to sit on it by clicking.
+const SEAT_REACH = 160;
+
 // Cena principal do jogo: monta mapa/jogador local e sincroniza estado em tempo real com a sala.
 export class MainScene extends Phaser.Scene {
   private player!: Player;
@@ -25,9 +28,8 @@ export class MainScene extends Phaser.Scene {
   private sounds = getSoundManager();
   private animatedObjects: AnimatedObject[] = [];
   private seats: Seat[] = [];
-  /** The chair the local player is sitting on. `armed`: the move key that sat it down was released (so it does not stand up at once). */
-  private sitting?: { seat: Seat; feetX: number; feetY: number; armed: boolean };
-  private seatLockUntil = 0;
+  /** The chair the local player is sitting on. */
+  private sitting?: { seat: Seat; feetX: number; feetY: number };
 
   constructor() {
     super({ key: "game" });
@@ -49,6 +51,8 @@ export class MainScene extends Phaser.Scene {
     this.animatedObjects = [];
     this.seats = templateMap.seats;
     this.sitting = undefined;
+    this.input.on(Phaser.Input.Events.POINTER_DOWN, this.onSeatClick);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.input.off(Phaser.Input.Events.POINTER_DOWN, this.onSeatClick));
     const collideWith = buildTemplateMapInScene(this, templateMap, this.animatedObjects);
     const bounds = new Phaser.Geom.Rectangle(templateMap.bounds.x, templateMap.bounds.y, templateMap.bounds.width, templateMap.bounds.height);
     const spawnFromMap = walkable.randomSpawn();
@@ -103,7 +107,7 @@ export class MainScene extends Phaser.Scene {
     const cam = this.cameras.main;
     cam.setScroll(Math.round(cam.scrollX), Math.round(cam.scrollY));
     this.player.setDepth(this.player.y);
-    this.updateSeat(now);
+    this.updateSeat();
 
     // The player sprite is 64px tall and stands on its bottom edge.
     for (const object of this.animatedObjects) object.update(now, this.player.x, this.player.y + 32, 32);
@@ -124,44 +128,34 @@ export class MainScene extends Phaser.Scene {
     }
   }
 
-  // Chairs: walking into an object flagged `sittable` sits the local player on it; any move key gets up.
-  // Local only for now: other players see the avatar standing still on the chair.
-  private updateSeat(now: number) {
-    const player = this.player;
-    if (this.sitting) {
-      const { seat, feetX, feetY } = this.sitting;
-      const direction = player.inputDirection();
-      if (!direction) this.sitting.armed = true;
-      if (direction && this.sitting.armed) {
-        // Get up on the side the chair looks to.
-        const step = { left: [-1, 0], right: [1, 0], up: [0, -1], down: [0, 1] }[seat.facing];
-        player.standUp(feetX + step[0] * TILE, feetY + step[1] * TILE - 32);
-        this.room?.send("sit", {});
-        this.sitting = undefined;
-        this.seatLockUntil = now + 600;
-        return;
-      }
-      // Sorted with the chair: in front of it, except a chair that looks away (its back covers the person).
-      if (seat.depth !== undefined) player.setDepth(seat.depth + (seat.facing === "up" ? -0.5 : 0.5));
-      return;
-    }
-    if (now < this.seatLockUntil || !player.isMoving()) return;
+  // Chairs: clicking an object flagged `sittable` (close enough) sits the local player on it; a move key gets up, towards
+  // the side of that key (W up, A left, S down, D right).
+  private readonly onSeatClick = (pointer: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[] = []) => {
+    if (this.sitting || over.some((object) => object === this.player || object.getData?.("isPlayerSprite"))) return;
+    const seat = this.seats.find((s) => pointer.worldX >= s.art.x && pointer.worldX <= s.art.x + s.art.width && pointer.worldY >= s.art.y && pointer.worldY <= s.art.y + s.art.height);
+    if (!seat) return;
+    const seatX = Phaser.Math.Clamp(this.player.x, seat.x + TILE / 2, seat.x + seat.width - TILE / 2);
+    const seatY = seat.y + TILE / 2;
+    // Only chairs within reach: the click does not teleport the player across the room.
+    if (Math.hypot(seatX - this.player.x, seatY - (this.player.y + 32)) > SEAT_REACH) return;
+    this.sitting = { seat, feetX: seatX, feetY: seatY };
+    this.player.sit(seatX, seatY - 32, seat.facing);
+    this.room?.send("sit", { facing: seat.facing });
+  };
 
-    const feetX = player.x;
-    const feetY = player.y + 32;
-    const heading = { left: [-1, 0], right: [1, 0], up: [0, -1], down: [0, 1] }[player.getDirection()];
-    for (const seat of this.seats) {
-      const seatX = Phaser.Math.Clamp(feetX, seat.x + TILE / 2, seat.x + seat.width - TILE / 2);
-      const seatY = seat.y + TILE / 2;
-      const dx = seatX - feetX;
-      const dy = seatY - feetY;
-      // Close enough (a chair standing on collision cells stops the player up to a tile short) and walking towards it.
-      if (Math.hypot(dx, dy) > 48 || dx * heading[0] + dy * heading[1] <= 0) continue;
-      this.sitting = { seat, feetX: seatX, feetY: seatY, armed: false };
-      player.sit(seatX, seatY - 32, seat.facing);
-      this.room?.send("sit", { facing: seat.facing });
+  private updateSeat() {
+    if (!this.sitting) return;
+    const { seat, feetX, feetY } = this.sitting;
+    const direction = this.player.inputDirection();
+    if (direction) {
+      const step = { left: [-1, 0], right: [1, 0], up: [0, -1], down: [0, 1] }[direction];
+      this.player.standUp(feetX + step[0] * TILE, feetY + step[1] * TILE - 32, direction);
+      this.room?.send("sit", {});
+      this.sitting = undefined;
       return;
     }
+    // Sorted with the chair: in front of it, except a chair that looks away (its back covers the person).
+    if (seat.depth !== undefined) this.player.setDepth(seat.depth + (seat.facing === "up" ? -0.5 : 0.5));
   }
 
   // Extrai o spawn inicial do jogador local a partir do estado da room.

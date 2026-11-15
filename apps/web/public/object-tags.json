@@ -6,5 +6,13 @@
   "Hospital_32x32_80_0cd99": {
     "sittable": true,
     "facing": "down"
+  },
+  "Hospital_32x32_86_79b07": {
+    "sittable": true,
+    "facing": "down"
+  },
+  "Hospital_32x32_98_9e8cc": {
+    "sittable": true,
+    "facing": "down"
   }
 }
