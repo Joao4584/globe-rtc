@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useI18n } from "@/locales/client";
 import { cn } from "@/modules/shared/utils";
-import { SEAT_FACINGS, getObjectTag, setObjectTag, type SeatFacing } from "../assets/object-tags";
+import { SEAT_FACINGS, loadObjectTags, setObjectTag, type ObjectTag, type SeatFacing } from "../assets/object-tags";
 import type { SelectedObject } from "../scenes/builder-scene";
 import { ui } from "../ui/theme";
 
@@ -13,7 +13,14 @@ type TagKey = `dashboard.editor.builder.tags.${string}`;
 // it; the direction is where the person looks while sitting. Saved in the asset registry, not in the map.
 export function ObjectTagCard({ selection }: { selection: SelectedObject }) {
   const t = useI18n();
-  const [tag, setTag] = useState(() => getObjectTag(selection.id));
+  const [tag, setTag] = useState<ObjectTag | undefined>();
+  useEffect(() => {
+    let alive = true;
+    void loadObjectTags().then((tags) => alive && setTag(tags.get(selection.id)));
+    return () => {
+      alive = false;
+    };
+  }, [selection.id]);
   const [failed, setFailed] = useState(false);
   if (selection.kind !== "object" && selection.kind !== "animated") return null;
 

@@ -2,7 +2,7 @@ import * as Phaser from "phaser";
 import { TILE, getItem, itemKey, type ItemKind, type MapItem } from "@/modules/editor/assets/map-assets";
 import { itemRef, parseMap } from "@/modules/editor/assets/map-data";
 import { ruleKey, type AnimationRule } from "@/modules/editor/assets/object-rules";
-import { getObjectTag, type SeatFacing } from "@/modules/editor/assets/object-tags";
+import { loadObjectTags, type SeatFacing } from "@/modules/editor/assets/object-tags";
 import { AnimatedObject } from "../scenes/helpers/animated-object";
 import type { LayerMode } from "@/modules/editor/assets/map-layers";
 
@@ -46,6 +46,7 @@ export async function prepareTemplateMap(raw: unknown): Promise<TemplateMapData 
 
   const rules = new Map(parsed.rules.map((rule) => [ruleKey(rule.layer, rule.ref, rule.x, rule.y), rule]));
   const artRecords = parsed.records.filter((rec) => rec.kind !== "collision" && layerById.get(rec.layer)?.type === "art");
+  const objectTags = await loadObjectTags();
   const loaded = await Promise.all(
     artRecords.map((rec, seq) =>
       getItem(rec.kind as ItemKind, rec.id)
@@ -87,7 +88,7 @@ export async function prepareTemplateMap(raw: unknown): Promise<TemplateMapData 
           : y + item.height - PLAYER_FEET_OFFSET + index * 0.01 + seq * 1e-7;
     const rule = item.animation ? rules.get(ruleKey(rec.layer, itemRef(rec.kind as ItemKind, rec.id), rec.x, rec.y)) : undefined;
     drawables.push({ item, x, y, depth, mode, layer: index, ...(rule?.type === "animation" ? { rule } : {}) });
-    const tag = rec.kind === "object" || rec.kind === "animated" ? getObjectTag(rec.id) : undefined;
+    const tag = rec.kind === "object" || rec.kind === "animated" ? objectTags.get(rec.id) : undefined;
     if (tag?.sittable) seats.push({ x: rec.x * TILE, y: rec.y * TILE, width: item.tilesW * TILE, facing: tag.facing, ...(mode === "ysort" ? { depth } : {}) });
   }
 

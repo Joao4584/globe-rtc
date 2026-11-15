@@ -3,7 +3,7 @@ import path from "node:path";
 import { NextResponse } from "next/server";
 
 // Development only: lets the map editor write the flags of an asset (sittable...) into the committed registry file.
-const FILE = path.join(process.cwd(), "assets-registry", "object-tags.json");
+const FILE = path.join(process.cwd(), "public", "object-tags.json");
 const ID = /^[A-Za-z0-9_]{1,120}$/;
 const FACINGS = new Set(["down", "up", "left", "right"]);
 
