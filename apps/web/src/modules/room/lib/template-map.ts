@@ -2,6 +2,7 @@ import * as Phaser from "phaser";
 import { TILE, getItem, itemKey, type ItemKind, type MapItem } from "@/modules/editor/assets/map-assets";
 import { itemRef, parseMap } from "@/modules/editor/assets/map-data";
 import { ruleKey, type AnimationRule } from "@/modules/editor/assets/object-rules";
+import { getObjectTag, type SeatFacing } from "@/modules/editor/assets/object-tags";
 import { AnimatedObject } from "../scenes/helpers/animated-object";
 import type { LayerMode } from "@/modules/editor/assets/map-layers";
 
@@ -18,8 +19,12 @@ const PLAYER_FEET_OFFSET = 32;
 
 export type TemplateDrawable = { item: MapItem; x: number; y: number; depth: number; mode: LayerMode; layer: number; rule?: AnimationRule };
 
+/** A placed object flagged `sittable`: `x/y/width` is its base row (the cells it stands on), in world pixels. */
+export type Seat = { x: number; y: number; width: number; facing: SeatFacing; /** y-sort depth of the object, absent when it is not sorted with the players */ depth?: number };
+
 export type TemplateMapData = {
   drawables: TemplateDrawable[];
+  seats: Seat[];
   collisionCells: [number, number][];
   /** cells players may stand on (floor layers minus collision) */
   walkable: Set<string>;
@@ -50,6 +55,7 @@ export async function prepareTemplateMap(raw: unknown): Promise<TemplateMapData 
   );
 
   const drawables: TemplateDrawable[] = [];
+  const seats: Seat[] = [];
   const groundCells = new Set<string>();
   const anyArtCells = new Set<string>();
 
@@ -81,6 +87,8 @@ export async function prepareTemplateMap(raw: unknown): Promise<TemplateMapData 
           : y + item.height - PLAYER_FEET_OFFSET + index * 0.01 + seq * 1e-7;
     const rule = item.animation ? rules.get(ruleKey(rec.layer, itemRef(rec.kind as ItemKind, rec.id), rec.x, rec.y)) : undefined;
     drawables.push({ item, x, y, depth, mode, layer: index, ...(rule?.type === "animation" ? { rule } : {}) });
+    const tag = rec.kind === "object" || rec.kind === "animated" ? getObjectTag(rec.id) : undefined;
+    if (tag?.sittable) seats.push({ x: rec.x * TILE, y: rec.y * TILE, width: item.tilesW * TILE, facing: tag.facing, ...(mode === "ysort" ? { depth } : {}) });
   }
 
   if (!drawables.length) return null;
@@ -105,6 +113,7 @@ export async function prepareTemplateMap(raw: unknown): Promise<TemplateMapData 
 
   return {
     drawables,
+    seats,
     collisionCells,
     walkable,
     walkableList,
@@ -122,6 +131,7 @@ export function emptyTemplateMap(): TemplateMapData {
   }
   return {
     drawables: [],
+    seats: [],
     collisionCells: [],
     walkable: new Set(walkableList.map(([x, y]) => cellKey(x, y))),
     walkableList,

@@ -181,6 +181,14 @@ export default {
             near: "Plays when a player gets within 1 tile. Toggle: plays back when the player leaves. Loop: loops only while someone is near.",
           },
         },
+        tags: {
+          title: "Object flags",
+          sittable: "Can sit (chair)",
+          facing: "Looks towards",
+          facings: { down: "Down (front)", up: "Up (back)", left: "Left", right: "Right" },
+          hint: "Applies to every copy of this object. A player walking into it sits down; any move key stands up.",
+          saveFailed: "Could not save the flag (only works in development).",
+        },
         palette: {
           open: "Palette",
           drop: "Drop item (Esc)",

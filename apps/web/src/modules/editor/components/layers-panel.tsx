@@ -10,6 +10,7 @@ import { isProtectedLayer, layerAccepts, type LayerController, type LayerState, 
 import type { ObjectRule } from "../assets/object-rules";
 import type { SelectedObject } from "../scenes/builder-scene";
 import { ObjectRuleCard } from "./object-rule-card";
+import { ObjectTagCard } from "./object-tag-card";
 import { ui } from "../ui/theme";
 
 type LayersPanelProps = {
@@ -190,6 +191,7 @@ export function LayersPanel({ state, controller, selection = null, onRuleChange 
         )}
       </div>
       {selection && onRuleChange ? <ObjectRuleCard key={selection.key} selection={selection} onChange={onRuleChange} /> : null}
+      {selection ? <ObjectTagCard key={`tag:${selection.id}`} selection={selection} /> : null}
     </div>
   );
 }

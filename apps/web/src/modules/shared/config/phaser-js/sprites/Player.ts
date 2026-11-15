@@ -1,6 +1,6 @@
 import * as Phaser from "phaser";
 import { VIRTUAL_DEADZONE, virtualInput } from "../virtual-input";
-import { FALLBACK_SKIN, createSkinAnimations, isCustomSkin, loadSkin, skinAnimKey, skinTextureKey, usableSkin } from "@/modules/room/lib/skin-assets";
+import { FALLBACK_SKIN, createSkinAnimations, isCustomSkin, loadSkin, skinAnimKey, skinSitKey, skinTextureKey, usableSkin } from "@/modules/room/lib/skin-assets";
 
 type Direction = "up" | "down" | "left" | "right";
 
@@ -19,6 +19,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   private lastDirection: Direction = "down";
   private moving = false;
+  /** Set while sitting on a chair: the player does not move until a move key stands it up. */
+  private seatedFacing?: Direction;
 
   constructor(
     scene: Phaser.Scene,
@@ -107,56 +109,79 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     });
   }
 
-  update() {
-    const currentSpeed = this.isSprinting() ? this.sprintSpeed : this.baseSpeed;
+  /** The direction the player is asking to move in right now (keyboard or touch stick), if any. */
+  inputDirection(): Direction | null {
     const { left, right, up, down, leftArrow, rightArrow, upArrow, downArrow } = this.cursors;
     // Touch joystick: the stronger axis wins (movement is 4-directional like the keyboard).
     const stickX = Math.abs(virtualInput.x) >= Math.abs(virtualInput.y) ? virtualInput.x : 0;
     const stickY = stickX === 0 ? virtualInput.y : 0;
-    const stickLeft = stickX < -VIRTUAL_DEADZONE;
-    const stickRight = stickX > VIRTUAL_DEADZONE;
-    const stickUp = stickY < -VIRTUAL_DEADZONE;
-    const stickDown = stickY > VIRTUAL_DEADZONE;
+    if (left.isDown || leftArrow.isDown || stickX < -VIRTUAL_DEADZONE) return "left";
+    if (right.isDown || rightArrow.isDown || stickX > VIRTUAL_DEADZONE) return "right";
+    if (up.isDown || upArrow.isDown || stickY < -VIRTUAL_DEADZONE) return "up";
+    if (down.isDown || downArrow.isDown || stickY > VIRTUAL_DEADZONE) return "down";
+    return null;
+  }
+
+  update() {
+    if (this.seatedFacing) {
+      this.moving = false;
+      this.playSeated(this.seatedFacing);
+      return;
+    }
+
+    const currentSpeed = this.isSprinting() ? this.sprintSpeed : this.baseSpeed;
+    const direction = this.inputDirection();
 
     this.setVelocity(0);
     this.moving = false;
 
-    if (left.isDown || leftArrow.isDown || stickLeft) {
-      this.lastDirection = "left";
-      this.setVelocityX(-currentSpeed);
-      this.anims.play(this.animKey("walk", "left"), true);
-      this.moving = true;
-    } else if (right.isDown || rightArrow.isDown || stickRight) {
-      this.lastDirection = "right";
-      this.setVelocityX(currentSpeed);
-      this.anims.play(this.animKey("walk", "right"), true);
-      this.moving = true;
-    } else if (up.isDown || upArrow.isDown || stickUp) {
-      this.lastDirection = "up";
-      this.setVelocityY(-currentSpeed);
-      this.anims.play(this.animKey("walk", "up"), true);
-      this.moving = true;
-    } else if (down.isDown || downArrow.isDown || stickDown) {
-      this.lastDirection = "down";
-      this.setVelocityY(currentSpeed);
-      this.anims.play(this.animKey("walk", "down"), true);
+    if (direction) {
+      this.lastDirection = direction;
+      if (direction === "left") this.setVelocityX(-currentSpeed);
+      else if (direction === "right") this.setVelocityX(currentSpeed);
+      else if (direction === "up") this.setVelocityY(-currentSpeed);
+      else this.setVelocityY(currentSpeed);
+      this.anims.play(this.animKey("walk", direction), true);
       this.moving = true;
     } else {
-      switch (this.lastDirection) {
-        case "up":
-          this.anims.play(this.animKey("idle", "up"), true);
-          break;
-        case "down":
-          this.anims.play(this.animKey("idle", "down"), true);
-          break;
-        case "left":
-          this.anims.play(this.animKey("idle", "left"), true);
-          break;
-        case "right":
-          this.anims.play(this.animKey("idle", "right"), true);
-          break;
+      this.anims.play(this.animKey("idle", this.lastDirection), true);
+    }
+  }
+
+  isSitting() {
+    return this.seatedFacing !== undefined;
+  }
+
+  /** Sits on a chair: moves here (centre of the sprite), stops physics and shows the sitting pose. */
+  sit(x: number, y: number, facing: Direction) {
+    this.seatedFacing = facing;
+    this.lastDirection = facing;
+    this.moving = false;
+    this.setVelocity(0);
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    body.reset(x, y);
+    body.enable = false;
+    this.playSeated(facing);
+  }
+
+  /** Gets up and goes to the given spot (centre of the sprite). */
+  standUp(x: number, y: number) {
+    this.seatedFacing = undefined;
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    body.enable = true;
+    body.reset(x, y);
+  }
+
+  // Side view when the skin has it (custom sheets of adults); front/back chairs, kids and the ghost show the idle pose.
+  private playSeated(facing: Direction) {
+    if (facing === "left" || facing === "right") {
+      const key = skinSitKey(this.activeSkin, facing);
+      if (this.scene.anims.exists(key)) {
+        this.anims.play(key, true);
+        return;
       }
     }
+    this.anims.play(this.animKey("idle", facing), true);
   }
 
   getDirection(): Direction {

@@ -21,6 +21,10 @@ export const skinTextureKey = (skin: string, motion: SkinMotion) => (isCustomSki
 
 export const skinAnimKey = (skin: string, motion: SkinMotion, dir: string) => `${skin}-${motion}-${dir}`;
 
+/** Sitting (side view only): third row of the sheet, 6 frames facing right then 6 facing left. Kid sheets do not have it. */
+const SIT_ROW = 2;
+export const skinSitKey = (skin: string, dir: "left" | "right") => `${skin}-sit-${dir}`;
+
 /** True when the textures of this skin are in memory. */
 export const skinReady = (scene: Phaser.Scene, skin: string) => scene.textures.exists(skinTextureKey(skin, "idle"));
 
@@ -44,6 +48,16 @@ export function createSkinAnimations(scene: Phaser.Scene, skin: string) {
       });
     });
   });
+
+  const sheet = scene.textures.get(skin).source[0];
+  if (Math.floor(sheet.height / FRAME_HEIGHT) > SIT_ROW) {
+    (["right", "left"] as const).forEach((dir, index) => {
+      const key = skinSitKey(skin, dir);
+      if (scene.anims.exists(key)) return;
+      const start = SIT_ROW * columns + index * FRAMES_PER_DIRECTION;
+      scene.anims.create({ key, frames: scene.anims.generateFrameNumbers(skin, { start, end: start + FRAMES_PER_DIRECTION - 1 }), frameRate: 4, repeat: -1 });
+    });
+  }
 }
 
 /** Adds the sheet of a custom skin to the loader (use inside preload, or call loadSkin later). */

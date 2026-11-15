@@ -181,6 +181,14 @@ export default {
             near: "Toca quando um jogador chega a 1 bloco. Vai e volta: volta quando o jogador se afasta. Loop: so repete enquanto alguem esta perto.",
           },
         },
+        tags: {
+          title: "Marcas do objeto",
+          sittable: "Pode sentar (cadeira)",
+          facing: "Olha para",
+          facings: { down: "Baixo (frente)", up: "Cima (costas)", left: "Esquerda", right: "Direita" },
+          hint: "Vale para todas as copias deste objeto. O jogador que andar ate ele senta; qualquer tecla de movimento levanta.",
+          saveFailed: "Nao foi possivel salvar a marca (so funciona em desenvolvimento).",
+        },
         palette: {
           open: "Paleta",
           drop: "Soltar item (Esc)",
