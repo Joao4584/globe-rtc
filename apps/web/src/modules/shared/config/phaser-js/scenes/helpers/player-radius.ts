@@ -5,7 +5,9 @@ export type PlayerRadius = {
   radius: number;
 };
 
-export const PLAYER_RADIUS_DEFAULT = 120;
+// Voice radius: whoever is inside it is in your conversation (see room/voice). Leaving needs a bit more distance.
+export const PLAYER_RADIUS_DEFAULT = 160;
+export const VOICE_LEAVE_FACTOR = 1.3;
 export const PLAYER_RADIUS_Y_SCALE = 0.6;
 export const PLAYER_RADIUS_Y_OFFSET = 10;
 const FILL_COLOR = 0x38bdf8;

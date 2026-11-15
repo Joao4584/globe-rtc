@@ -535,6 +535,22 @@ export default {
     ping: {
       label: "Ping",
     },
+    voice: {
+      idle: "Voice: nobody near",
+      connecting: "Connecting voice...",
+      connected: "Voice connected",
+      connectError: "Voice unavailable",
+      micDenied: "Microphone blocked",
+      hint: "Walk close to someone to talk",
+      mute: "Mute microphone",
+      unmute: "Unmute microphone",
+      deafen: "Deafen",
+      undeafen: "Undeafen",
+      cameraOn: "Turn camera on",
+      cameraOff: "Turn camera off",
+      screenOn: "Share screen",
+      screenOff: "Stop sharing screen",
+    },
     playerInfo: {
       loadError: "Could not load profile.",
       profileInfo: "Profile Information",

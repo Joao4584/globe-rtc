@@ -10,28 +10,22 @@ export type RemoteSummary = {
   y: number;
 };
 
-export function getNearbyPlayers(
-  remotes: RemoteSummary[],
-  centerX: number,
-  centerY: number,
-  radius: number,
-) {
+/** Remotes inside the radius ellipse (closest first), with the id of the remote and the distance in px. */
+export function getNearbyEntries(remotes: RemoteSummary[], centerX: number, centerY: number, radius: number) {
   const rx = radius;
   const ry = radius * PLAYER_RADIUS_Y_SCALE;
-  const nearby = remotes
+  return remotes
     .map((remote) => {
       const dx = remote.x - centerX;
       const dy = remote.y - (centerY + PLAYER_RADIUS_Y_OFFSET);
       const ellipse = (dx * dx) / (rx * rx) + (dy * dy) / (ry * ry);
       if (ellipse > 1) return null;
-      return {
-        name: remote.name,
-        distance: Math.sqrt(dx * dx + dy * dy),
-      };
+      return { id: remote.id, name: remote.name, distance: Math.sqrt(dx * dx + dy * dy) };
     })
-    .filter((entry): entry is { name: string; distance: number } => !!entry)
-    .sort((a, b) => a.distance - b.distance)
-    .map((entry) => entry.name);
+    .filter((entry): entry is { id: string; name: string; distance: number } => !!entry)
+    .sort((a, b) => a.distance - b.distance);
+}
 
-  return nearby;
+export function getNearbyPlayers(remotes: RemoteSummary[], centerX: number, centerY: number, radius: number) {
+  return getNearbyEntries(remotes, centerX, centerY, radius).map((entry) => entry.name);
 }

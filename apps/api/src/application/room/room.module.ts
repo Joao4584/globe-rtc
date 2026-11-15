@@ -28,6 +28,8 @@ import { RoomMembersController } from '@/presentation/controllers/room/room-memb
 import { MapTemplate } from '@/infrastructure/entities/map-template.entity';
 import { MapTemplateTypeOrmRepository } from '@/infrastructure/repositories/map-template.repository';
 import { UserModule } from '@/application/user/user.module';
+import { CreateVoiceTokenUseCase } from './use-case/create-voice-token.use-case';
+import { RoomVoiceController } from '@/presentation/controllers/room/room-voice.controller';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Room, RoomParticipant, RoomFavorite, UploadFile, Friends, MapTemplate]), UlidModule, UserModule],
@@ -48,8 +50,9 @@ import { UserModule } from '@/application/user/user.module';
     ListUserRoomsUseCase,
     GetUserRoomsUseCase,
     JoinRoomUseCase,
+    CreateVoiceTokenUseCase,
     ToggleRoomFavoriteUseCase,
   ],
-  controllers: [RoomController, RoomParticipantsController, RoomMembersController],
+  controllers: [RoomController, RoomParticipantsController, RoomMembersController, RoomVoiceController],
 })
 export class RoomModule {}

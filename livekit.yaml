@@ -1,0 +1,11 @@
+# Self-hosted LiveKit (voice / camera / screen share). Started by `docker compose up` (service `livekit`).
+# The key/secret must match LIVEKIT_API_KEY / LIVEKIT_API_SECRET (defaults in packages/env/index.ts).
+port: 7880
+rtc:
+  tcp_port: 7881
+  udp_port: 7882
+  # Docker runs inside WSL: advertise localhost so the browser on Windows can reach the media ports.
+  # For a real server, replace with `use_external_ip: true` (and remove node_ip).
+  node_ip: 127.0.0.1
+keys:
+  devkey: globe-rtc-dev-livekit-secret-change-me-0123456789

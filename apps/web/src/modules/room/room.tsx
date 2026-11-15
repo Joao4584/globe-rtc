@@ -10,6 +10,7 @@ import { TouchControls } from "./components/touch-controls";
 import { FocusReturnButton } from "./components/focus-return-button";
 import { NearbyPlayers } from "./components/nearby-players";
 import { PingCard } from "./components/ping-card";
+import { VoicePanel } from "./components/voice-panel";
 import { PlayerInfoCard } from "./components/player-info-card";
 import { useUser } from "@/modules/profile/hooks/use-user";
 import type { RoomDetail } from "../rooms/services/get-room-detail";
@@ -336,6 +337,7 @@ export default function RoomPage(props: RoomPageProps) {
           <ManageRoomDialog roomPublicId={props.room.public_id} open={manageOpen} onOpenChange={setManageOpen} />
           <PlayerInfoCard />
           <NearbyPlayers />
+          <VoicePanel roomPublicId={props.room.public_id} />
           <TouchControls />
         </>
       ) : canMountGame ? (

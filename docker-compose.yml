@@ -17,5 +17,18 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  # Voice / camera / screen share (WebRTC SFU). Config: ./livekit.yaml
+  livekit:
+    image: livekit/livekit-server:latest
+    container_name: livekit
+    restart: unless-stopped
+    command: --config /etc/livekit.yaml
+    ports:
+      - '7880:7880'
+      - '7881:7881'
+      - '7882:7882/udp'
+    volumes:
+      - ./livekit.yaml:/etc/livekit.yaml:ro
+
 volumes:
   postgres_data:

@@ -17,8 +17,10 @@ import {
   destroyPlayerRadius,
   positionPlayerRadius,
   togglePlayerRadius,
+  VOICE_LEAVE_FACTOR,
 } from "@/modules/shared/config/phaser-js/scenes/helpers/player-radius";
-import { getNearbyPlayers } from "@/modules/shared/config/phaser-js/scenes/helpers/proximity";
+import { getNearbyEntries } from "@/modules/shared/config/phaser-js/scenes/helpers/proximity";
+import { voice } from "../../voice/voice-client";
 import { clearNearbyPlayers, setNearbyPlayers } from "../../stores/nearby-store";
 import { useRoomUiStore } from "../../stores/room-ui-store";
 import { RemoteManager } from "./remote-manager";
@@ -47,6 +49,9 @@ export class LocalPlayerPresence {
   private selfStateMessage = "";
   private hiddenMessage?: string;
   private lastNearbyKey = "";
+  private conversation = new Set<string>();
+  private lastVoiceKey = "";
+  private lastVoiceAt = 0;
   private onSelfPointerOver = () => {
     const name = this.selfLabel?.text?.trim() || this.selfName;
     if (!name) return;
@@ -93,6 +98,7 @@ export class LocalPlayerPresence {
     this.selfLabel.setVisible(true);
     this.selfBubble = createChatBubble(this.scene, "", spawn.x, spawn.y);
     this.selfRadius = createPlayerRadius(this.scene);
+    togglePlayerRadius(this.selfRadius, true); // the voice radius is always drawn (P hides it)
     this.createHoverOutlineSprites();
     this.player.setData("isPlayerSprite", true);
     this.player.setInteractive({ useHandCursor: true });
@@ -126,20 +132,13 @@ export class LocalPlayerPresence {
 
   // Atualiza proximidade, nome e bolha de chat local com base no estado da room.
   public update(now: number) {
-    if (this.selfRadius) {
-      positionPlayerRadius(this.selfRadius, this.player.x, this.player.y);
-      const shouldDetect = this.selfRadius.graphics.visible;
-      const remotes = this.getRemotes();
-      const nearby = shouldDetect && remotes ? getNearbyPlayers(remotes.getRemoteSummaries(), this.player.x, this.player.y, this.selfRadius.radius) : [];
-      const key = nearby.join("|");
-      if (key !== this.lastNearbyKey) {
-        setNearbyPlayers(nearby);
-        this.lastNearbyKey = key;
-      }
-    }
-
     const room = this.getRoom();
     const selfState = room?.state.players.get(room?.sessionId ?? "");
+
+    if (this.selfRadius) {
+      positionPlayerRadius(this.selfRadius, this.player.x, this.player.y);
+      this.updateConversation(now);
+    }
 
     if (this.selfLabel && selfState) {
       const nextName = selfState.name ?? this.selfName;
@@ -170,6 +169,40 @@ export class LocalPlayerPresence {
         }
       }
     }
+  }
+
+  // Who is in the conversation: inside the radius to join, and only out once past a wider radius (hysteresis, so
+  // standing on the edge does not flap). Feeds the "near you" list and the proximity voice.
+  private updateConversation(now: number) {
+    if (!this.selfRadius) return;
+    const remotes = this.getRemotes();
+    const summaries = remotes ? remotes.getRemoteSummaries() : [];
+    const radius = this.selfRadius.radius;
+    const inner = getNearbyEntries(summaries, this.player.x, this.player.y, radius);
+    const outer = getNearbyEntries(summaries, this.player.x, this.player.y, radius * VOICE_LEAVE_FACTOR);
+    const outerIds = new Set(outer.map((entry) => entry.id));
+    const next = new Set(inner.map((entry) => entry.id));
+    this.conversation.forEach((id) => outerIds.has(id) && next.add(id));
+    this.conversation = next;
+
+    const entries = outer.filter((entry) => next.has(entry.id));
+    const key = entries.map((entry) => entry.id).join("|");
+    if (key !== this.lastNearbyKey) {
+      setNearbyPlayers(entries.map((entry) => entry.name));
+      this.lastNearbyKey = key;
+    }
+
+    // Throttled: the voice client only needs to know about changes and distance (volume) a few times a second.
+    if (key === this.lastVoiceKey && now - this.lastVoiceAt < 250) return;
+    this.lastVoiceKey = key;
+    this.lastVoiceAt = now;
+    const players = this.getRoom()?.state.players;
+    const volumes = new Map<string, number>();
+    entries.forEach((entry) => {
+      const identity = players?.get(entry.id)?.id;
+      if (identity) volumes.set(identity, Math.min(1, Math.max(0.25, 1.2 - (entry.distance / radius) * 0.9)));
+    });
+    voice.setNearby(volumes);
   }
 
   // Atualiza o nome exibido sobre o jogador local.
@@ -222,6 +255,8 @@ export class LocalPlayerPresence {
     this.selfHoverOutlineSprites.forEach((sprite) => sprite.destroy());
     this.selfHoverOutlineSprites = [];
     clearNearbyPlayers();
+    this.conversation.clear();
+    voice.setNearby(new Map());
   }
 
   private createHoverOutlineSprites() {

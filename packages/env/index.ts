@@ -35,6 +35,11 @@ const envSchema = z.object({
   UPLOAD_STORAGE_PROVIDER: z
     .enum(["file-system", "s3"])
     .default("file-system"),
+  // Self-hosted LiveKit (docker compose `livekit` service). The URL is what the browser connects to; the key/secret
+  // must match `livekit.yaml`. Change the secret outside local development.
+  LIVEKIT_URL: z.string().default("ws://localhost:7880"),
+  LIVEKIT_API_KEY: z.string().default("devkey"),
+  LIVEKIT_API_SECRET: z.string().default("globe-rtc-dev-livekit-secret-change-me-0123456789"),
   // Used by NextAuth, and (through a derived key, see internal-key.ts) to prove to the API that a
   // request comes from our own Next.js server. Required in production.
   NEXTAUTH_SECRET: z.preprocess((value) => (value === "" ? undefined : value), z.string().min(32).optional()),
