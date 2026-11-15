@@ -41,7 +41,7 @@ export function PingCard() {
   const pingMs = usePing(room);
 
   return (
-    <div className="absolute bottom-4 left-4 z-50 flex items-center gap-2 rounded-lg border border-sky-200/80 bg-white/85 px-3 py-2 shadow-lg backdrop-blur-sm mobile:pointer-events-auto mobile:static mobile:h-9 mobile:shrink-0 mobile:gap-1 mobile:px-2 mobile:py-0 dark:border-slate-700/60 dark:bg-slate-900/80">
+    <div className="pointer-events-auto flex shrink-0 items-center gap-2 rounded-lg border border-sky-200/80 bg-white/85 px-3 py-1.5 shadow-lg backdrop-blur-sm mobile:h-9 mobile:gap-1 mobile:px-2 mobile:py-0 dark:border-slate-700/60 dark:bg-slate-900/80">
       <span className="text-[11px] uppercase tracking-wide text-slate-500 mobile:hidden dark:text-slate-400">{t("room.ping.label")}</span>
       <span className="text-sm font-semibold tabular-nums mobile:text-xs text-slate-900 dark:text-slate-100">{pingMs !== null ? `${pingMs} ms` : "--"}</span>
     </div>

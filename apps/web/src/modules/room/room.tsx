@@ -278,24 +278,31 @@ export default function RoomPage(props: RoomPageProps) {
     <div className="w-full h-full flex justify-center items-center overflow-hidden relative">
       {/* Phones: room name, manage, ping and chat share one row at the top; on desktop each keeps its own corner. */}
       <div className="contents mobile:pointer-events-none mobile:absolute mobile:inset-x-3 mobile:top-3 mobile:z-50 mobile:flex mobile:items-center mobile:gap-2">
-        <div className="pointer-events-none absolute left-4 top-4 z-50 max-w-[55vw] truncate text-sm font-semibold text-slate-700 mobile:static mobile:min-w-0 mobile:max-w-none mobile:flex-1 mobile:text-xs dark:text-white">
-          <span className="text-slate-500 mobile:hidden dark:text-slate-300">{t("room.page.roomLabel")}</span> {props.room.name}
+        {/* Desktop: room name, manage and ping on a single line at the top left. */}
+        <div className="pointer-events-none absolute left-4 top-4 z-50 flex max-w-[70vw] items-center gap-3 mobile:contents">
+          <div className="min-w-0 truncate text-sm font-semibold text-slate-700 mobile:max-w-none mobile:flex-1 mobile:text-xs dark:text-white">
+            <span className="text-slate-500 mobile:hidden dark:text-slate-300">{t("room.page.roomLabel")}</span> {props.room.name}
+          </div>
+          {!checkingSavedAccessToken && canConnectToGame ? (
+            <>
+              {props.room.my_role && props.room.my_role !== "visitor" ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  className="pointer-events-auto shrink-0 gap-2 mobile:h-9 mobile:w-9 mobile:px-0"
+                  onClick={() => setManageOpen(true)}
+                >
+                  <Settings2 className="h-4 w-4" />
+                  <span className="mobile:sr-only">{t("dashboard.roomManage.open")}</span>
+                </Button>
+              ) : null}
+              <PingCard />
+            </>
+          ) : null}
         </div>
         {!checkingSavedAccessToken && canConnectToGame ? (
           <>
-            {props.room.my_role && props.room.my_role !== "visitor" ? (
-              <Button
-                type="button"
-                size="sm"
-                variant="secondary"
-                className="pointer-events-auto absolute left-4 top-10 z-50 gap-2 mobile:static mobile:h-9 mobile:w-9 mobile:shrink-0 mobile:px-0"
-                onClick={() => setManageOpen(true)}
-              >
-                <Settings2 className="h-4 w-4" />
-                <span className="mobile:sr-only">{t("dashboard.roomManage.open")}</span>
-              </Button>
-            ) : null}
-            <PingCard />
             <ChatCard />
           </>
         ) : null}
