@@ -65,6 +65,14 @@ export function registerPlaygroundMessageHandlers(room: Room<PlaygroundState>, m
     player.running = !!payload?.run;
   });
 
+  // Sitting on a chair (the client decides where, the position comes through "move"); an empty facing stands up.
+  room.onMessage("sit", (client, payload: { facing?: string }) => {
+    const player = room.state.players.get(client.sessionId);
+    if (!player) return;
+    player.sit = payload?.facing && directions.has(payload.facing) ? payload.facing : "";
+    if (player.sit) player.running = false;
+  });
+
   room.onMessage("rename", (client, payload: { name?: string }) => {
     const player = room.state.players.get(client.sessionId);
     if (!player) return;

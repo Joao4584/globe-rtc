@@ -12,6 +12,8 @@ export interface PlayerState extends Schema {
   ghost: boolean;
   skin: string;
   message: string;
+  /** facing while sitting on a chair, empty when standing */
+  sit: string;
 }
 
 export interface PlaygroundState extends Schema {

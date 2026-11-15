@@ -11,7 +11,9 @@ import {
 } from "@/modules/shared/config/phaser-js/scenes/helpers/chat-bubble";
 import { CHAT_HIDE_DELAY_MS, sanitizeChatMessage } from "@/modules/shared/config/phaser-js/chat-config";
 import { useRoomUiStore } from "../../stores/room-ui-store";
-import { FALLBACK_SKIN, loadSkin, skinAnimKey, skinTextureKey, usableSkin } from "../../lib/skin-assets";
+import { FALLBACK_SKIN, loadSkin, skinAnimKey, skinSitKey, skinTextureKey, usableSkin } from "../../lib/skin-assets";
+import type { Seat } from "../../lib/template-map";
+import { TILE } from "@/modules/editor/assets/map-assets";
 
 type CoerceFn = (x: number | undefined, y: number | undefined) => Phaser.Math.Vector2;
 type RemoteIdentity = { id?: string | number | null };
@@ -32,6 +34,7 @@ export class RemoteManager {
     [0, -2],
     [0, 2],
   ] as const;
+  private seats: Seat[] = [];
   private sprites = new Map<string, Phaser.GameObjects.Sprite>();
   private labels = new Map<string, NameLabel>();
   private listeners = new Map<string, { cleanup?: () => void }>();
@@ -57,6 +60,43 @@ export class RemoteManager {
     private fallbackSpawn: Phaser.Math.Vector2,
   ) {}
 
+  /** Chairs of the map, to sort sitting players with the chair they are on. */
+  setSeats(seats: Seat[]) {
+    this.seats = seats;
+  }
+
+  // Sitting players are placed exactly where they sit (a chair may stand on cells players cannot walk on).
+  private placeOf(player: any) {
+    if (player.sit) return new Phaser.Math.Vector2(player.x, player.y);
+    return this.coerce(player.x, player.y) ?? this.fallbackSpawn;
+  }
+
+  // Y-sort depth; a sitting player is sorted with the chair (in front of it, behind it when the chair looks away).
+  private depthFor(player: any, y: number, x: number) {
+    if (!player.sit) return y;
+    const feetX = x;
+    const feetY = y + 32;
+    const seat = this.seats.find((s) => s.depth !== undefined && feetX >= s.x && feetX <= s.x + s.width && feetY >= s.y && feetY <= s.y + TILE);
+    return seat?.depth !== undefined ? seat.depth + (seat.facing === "up" ? -0.5 : 0.5) : y;
+  }
+
+  // Standing: idle/walk. Sitting (and arrived): the sitting animation of the skin when it has one (side view only).
+  private pose(sprite: Phaser.GameObjects.Sprite, player: any, moving: boolean, skin: string) {
+    const dir = player.dir ?? "down";
+    if (player.sit && !moving) {
+      const facing = player.sit as string;
+      const key = facing === "left" || facing === "right" ? skinSitKey(skin, facing) : "";
+      if (key && this.scene.anims.exists(key)) {
+        sprite.anims.timeScale = 1;
+        sprite.anims.play(key, true);
+        return;
+      }
+      this.setRemoteAnimation(sprite, facing as "up" | "down" | "left" | "right", false, false, skin);
+      return;
+    }
+    this.setRemoteAnimation(sprite, dir, moving, !!player.running, skin);
+  }
+
   addOrUpdate(player: any, sessionId: string, selfId: string) {
     if (sessionId === selfId) return;
 
@@ -67,12 +107,12 @@ export class RemoteManager {
 
     const wanted = (player.skin ?? FALLBACK_SKIN).toString();
     const skin = usableSkin(this.scene, wanted);
-    const spawn = this.coerce(player.x, player.y) ?? this.fallbackSpawn;
+    const spawn = this.placeOf(player);
     const sprite = this.scene.physics.add.sprite(spawn.x, spawn.y, skinTextureKey(skin, "walk"));
-    sprite.setDepth(spawn.y);
+    sprite.setDepth(this.depthFor(player, spawn.y, spawn.x));
     sprite.setData("isPlayerSprite", true);
     sprite.setInteractive({ useHandCursor: true });
-    this.setRemoteAnimation(sprite, player.dir, false, !!player.running, skin);
+    this.pose(sprite, player, false, skin);
     this.sprites.set(sessionId, sprite);
     this.skins.set(sessionId, wanted);
     this.activeSkins.set(sessionId, skin);
@@ -116,7 +156,7 @@ export class RemoteManager {
     const target = this.sprites.get(sessionId);
     if (!target) return;
 
-    const desired = this.coerce(player.x, player.y) ?? this.fallbackSpawn;
+    const desired = this.placeOf(player);
     const dist = Phaser.Math.Distance.Between(target.x, target.y, desired.x, desired.y);
     const moving = dist > 0.2;
     const wanted = (player.skin ?? FALLBACK_SKIN).toString() || FALLBACK_SKIN;
@@ -130,8 +170,8 @@ export class RemoteManager {
     if (!moving) {
       this.scene.tweens.killTweensOf(target);
       target.setPosition(desired.x, desired.y);
-      this.setRemoteAnimation(target, player.dir, false, !!player.running, skin);
-      target.setDepth(desired.y);
+      this.pose(target, player, false, skin);
+      target.setDepth(this.depthFor(player, desired.y, desired.x));
       this.updateRemoteHoverOutlineSprites(sessionId);
       this.updateLabel(sessionId, target.x, target.y, player.name, player.isAdmin);
       this.updateBubble(sessionId, target.x, target.y, player.message, true);
@@ -146,7 +186,7 @@ export class RemoteManager {
     const speed = player.running ? 320 : 180;
     const duration = Phaser.Math.Clamp((Phaser.Math.Distance.Between(target.x, target.y, next.x, next.y) / speed) * 1000, 40, 240);
     this.scene.tweens.killTweensOf(target);
-    this.setRemoteAnimation(target, player.dir, true, !!player.running, skin);
+    this.pose(target, player, true, skin);
     this.updateBubble(sessionId, next.x, next.y, player.message, true);
 
     this.scene.tweens.add({
@@ -156,14 +196,14 @@ export class RemoteManager {
       duration,
       ease: "Linear",
       onUpdate: () => {
-        target.setDepth(target.y);
+        target.setDepth(this.depthFor(player, target.y, target.x));
         this.updateRemoteHoverOutlineSprites(sessionId);
         this.updateLabel(sessionId, target.x, target.y, player.name, player.isAdmin);
         this.updateBubble(sessionId, target.x, target.y, player.message, false);
       },
       onComplete: () => {
-        this.setRemoteAnimation(target, player.dir, false, !!player.running, skin);
-        target.setDepth(next.y);
+        this.pose(target, player, false, skin);
+        target.setDepth(this.depthFor(player, next.y, next.x));
         this.updateRemoteHoverOutlineSprites(sessionId);
         this.updateLabel(sessionId, target.x, target.y, player.name, player.isAdmin);
         this.updateBubble(sessionId, next.x, next.y, player.message, true);

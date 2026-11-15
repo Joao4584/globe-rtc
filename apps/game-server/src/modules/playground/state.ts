@@ -10,6 +10,8 @@ export class Player extends Schema {
   @type("boolean") running: boolean = false;
   @type("boolean") ghost: boolean = false;
   @type("string") skin: string = "ghost";
+  /** Direction the player looks while sitting on a chair ("down|up|left|right"), empty when not sitting. */
+  @type("string") sit: string = "";
   @type("string") message: string = "";
 }
 

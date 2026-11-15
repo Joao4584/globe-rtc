@@ -81,6 +81,7 @@ export class MainScene extends Phaser.Scene {
     });
 
     this.remotes = new RemoteManager(this, (x, y) => this.walkableResolver?.coerce(x, y, spawnFromMap) ?? spawnFromMap, spawnFromMap);
+    this.remotes.setSeats(this.seats);
     this.movementPublisher = new MovementPublisher(() => this.room, this.player);
     this.movementPublisher.syncInitialPosition(localSpawn);
     this.localPresence = new LocalPlayerPresence(
@@ -135,6 +136,7 @@ export class MainScene extends Phaser.Scene {
         // Get up on the side the chair looks to.
         const step = { left: [-1, 0], right: [1, 0], up: [0, -1], down: [0, 1] }[seat.facing];
         player.standUp(feetX + step[0] * TILE, feetY + step[1] * TILE - 32);
+        this.room?.send("sit", {});
         this.sitting = undefined;
         this.seatLockUntil = now + 600;
         return;
@@ -153,10 +155,11 @@ export class MainScene extends Phaser.Scene {
       const seatY = seat.y + TILE / 2;
       const dx = seatX - feetX;
       const dy = seatY - feetY;
-      // Close enough (a chair sitting on collision cells stops the player a few pixels short) and walking towards it.
-      if (Math.hypot(dx, dy) > 34 || dx * heading[0] + dy * heading[1] <= 0) continue;
+      // Close enough (a chair standing on collision cells stops the player up to a tile short) and walking towards it.
+      if (Math.hypot(dx, dy) > 48 || dx * heading[0] + dy * heading[1] <= 0) continue;
       this.sitting = { seat, feetX: seatX, feetY: seatY, armed: false };
       player.sit(seatX, seatY - 32, seat.facing);
+      this.room?.send("sit", { facing: seat.facing });
       return;
     }
   }
