@@ -154,8 +154,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   /** Sits on a chair: moves here (centre of the sprite), stops physics and shows the sitting pose. */
   sit(x: number, y: number, facing: Direction): Direction {
-    // The sheet only has the sitting pose from the side: a chair that looks up/down seats the player on the side he was heading to.
-    const side: Direction = facing === "left" || facing === "right" ? facing : this.lastDirection === "left" ? "left" : "right";
+    // Starts looking where the chair looks (the editor default is down); turn with WASD.
+    const side: Direction = facing;
     this.seatedFacing = side;
     this.lastDirection = side;
     this.moving = false;
