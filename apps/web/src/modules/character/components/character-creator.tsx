@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { ChevronLeft, ChevronRight, Check, Dices, Loader2, RotateCcw, RotateCw } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useI18n } from "@/locales/client";
+import { useIsMobile } from "@/modules/shared/hooks/use-mobile";
 import { MY_SKIN_KEY } from "../hooks/use-my-skin";
 import { cn } from "@/modules/shared/utils";
 import {
@@ -84,6 +85,22 @@ function Stepper({ label, value, onPrev, onNext }: { label: string; value: strin
   );
 }
 
+// Compact stepper for phones: arrows with the value squeezed between them.
+function MiniStepper({ label, value, onPrev, onNext, colorDot = false }: { label: string; value: string; onPrev: () => void; onNext: () => void; colorDot?: boolean }) {
+  const arrow = "flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border bg-background/60 text-foreground active:bg-accent";
+  return (
+    <div className="flex items-center gap-1">
+      <button type="button" onClick={onPrev} className={arrow} aria-label={`${label} -`}>
+        <ChevronLeft className="h-3.5 w-3.5" />
+      </button>
+      <span className="min-w-0 flex-1 truncate text-center text-[11px] tabular-nums text-muted-foreground">{colorDot ? `● ${value}` : value}</span>
+      <button type="button" onClick={onNext} className={arrow} aria-label={`${label} +`}>
+        <ChevronRight className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
+}
+
 function Panel({ className, children }: { className?: string; children: React.ReactNode }) {
   return <section className={cn("rounded-xl border border-border bg-card/60 p-5", className)}>{children}</section>;
 }
@@ -117,6 +134,17 @@ export function CharacterCreator() {
   const [hasCharacter, setHasCharacter] = useState<boolean | null>(null);
   const isFirstCharacter = hasCharacter === false;
   const renderId = useRef(0);
+  const isMobile = useIsMobile();
+  // Phones: the box of the character, to pick the biggest scale that fits it.
+  const [previewBox, setPreviewBox] = useState<HTMLDivElement | null>(null);
+  const [previewHeight, setPreviewHeight] = useState(0);
+  useEffect(() => {
+    if (!previewBox) return;
+    const observer = new ResizeObserver(() => setPreviewHeight(previewBox.clientHeight));
+    observer.observe(previewBox);
+    setPreviewHeight(previewBox.clientHeight);
+    return () => observer.disconnect();
+  }, [previewBox]);
 
   // The pieces to pick from, then the user's own character, or a random one when they have none yet.
   useEffect(() => {
@@ -205,6 +233,117 @@ export function CharacterCreator() {
     return (
       <div className="flex min-h-[60vh] items-center justify-center text-muted-foreground">
         <Loader2 className="h-6 w-6 animate-spin" />
+      </div>
+    );
+  }
+
+  // Phones: one screen without scrolling. Type switch on top, the character in the middle (turn it with the side arrows),
+  // animation chips under it, a compact row per part, then random / save.
+  if (isMobile) {
+    const frameHeight = rendered?.layout.frameHeight ?? 64;
+    const fit = previewHeight ? Math.max(2, Math.min(6, Math.floor((previewHeight - 12) / frameHeight))) : 4;
+    const small = "flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border bg-background/60 text-foreground active:bg-accent";
+    return (
+      <div className="flex h-full min-h-0 flex-col gap-2">
+        <div className="grid shrink-0 grid-cols-2 gap-2 pr-9">
+          {(["adult", "kid"] as const).map((type) => (
+            <Choice key={type} active={selection.type === type} onClick={() => void switchType(type)}>
+              {label(type)}
+            </Choice>
+          ))}
+        </div>
+
+        <div ref={setPreviewBox} className="relative flex min-h-0 flex-1 items-center justify-center rounded-xl border border-border bg-card/60">
+          {rendered ? (
+            <SkinPreview sheet={rendered.spritesheet} layout={rendered.layout} animation={shownAnimation} direction={shownDirection} scale={fit} />
+          ) : (
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          )}
+          <button type="button" onClick={() => rotate(-1)} className={cn(small, "absolute left-2 top-1/2 -translate-y-1/2")} aria-label={label("rotateLeft")}>
+            <RotateCcw className="h-4 w-4" />
+          </button>
+          <button type="button" onClick={() => rotate(1)} className={cn(small, "absolute right-2 top-1/2 -translate-y-1/2")} aria-label={label("rotateRight")}>
+            <RotateCw className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="flex shrink-0 gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {availableAnimations.map((name) => (
+            <button
+              key={name}
+              type="button"
+              onClick={() => setAnimation(name)}
+              className={cn(
+                "shrink-0 rounded-full px-3 py-1 text-xs font-medium transition",
+                shownAnimation === name ? "bg-primary text-primary-foreground" : "bg-background/60 text-muted-foreground active:bg-accent",
+              )}
+            >
+              {label(`anim_${name}`)}
+            </button>
+          ))}
+        </div>
+
+        <div className="shrink-0 space-y-1.5 rounded-xl border border-border bg-card/60 p-2">
+          {rows.map((part) => {
+            const groups = groupsOf(catalog, selection.type, part);
+            const optional = OPTIONAL.includes(part);
+            const current = selection[part as PartKey] as string | null;
+            const index = groupIndexOf(groups, current);
+            const group = groups[index];
+            const partName = label(part);
+            const hasStyles = groups.length > 1 || optional;
+            const hasColors = !!group && group.variants.length > 1;
+            if (!hasStyles && !hasColors) return null;
+            return (
+              <div key={part} className="grid grid-cols-[4.2rem_1fr_1fr] items-center gap-1.5">
+                <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-foreground">{partName}</p>
+                {hasStyles ? (
+                  <MiniStepper
+                    label={partName}
+                    value={current === null ? label("none") : `${index + 1}/${groups.length}`}
+                    onPrev={() => change(withStyle(selection, catalog, part, -1))}
+                    onNext={() => change(withStyle(selection, catalog, part, 1))}
+                  />
+                ) : (
+                  <span />
+                )}
+                {hasColors ? (
+                  <MiniStepper
+                    label={`${partName} ${label("color")}`}
+                    value={`${group.variants.indexOf(current as string) + 1}/${group.variants.length}`}
+                    colorDot
+                    onPrev={() => change(withVariant(selection, catalog, part, -1))}
+                    onNext={() => change(withVariant(selection, catalog, part, 1))}
+                  />
+                ) : (
+                  <span />
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {saveError ? <p className="shrink-0 text-xs text-rose-400">{label("saveFailed")}</p> : null}
+        <div className="grid shrink-0 grid-cols-[auto_1fr] gap-2">
+          <button
+            type="button"
+            onClick={() => void randomize()}
+            aria-label={label("random")}
+            className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-background/60 px-4 py-2.5 text-sm font-medium text-foreground active:bg-accent"
+          >
+            <Dices className="h-4 w-4" />
+            {label("random")}
+          </button>
+          <button
+            type="button"
+            onClick={() => void finish()}
+            disabled={saving}
+            className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-60"
+          >
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : saved ? <Check className="h-4 w-4" /> : null}
+            {saving ? label("saving") : saved ? label("saved") : label(isFirstCharacter ? "createButton" : "save")}
+          </button>
+        </div>
       </div>
     );
   }

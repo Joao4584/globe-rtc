@@ -84,16 +84,16 @@ export function Header({ onSearch }: HeaderProps) {
                 <UserProfileHeader />
               </div>
               <CreateRoom />
-              <HeaderNav vertical />
-              <div className="flex flex-col gap-2">
-                {isRoomRoute && (
-                  <Button variant="secondary" size="sm" onClick={handleShareRoom}>
-                    <Share2 />
-                    {t("dashboard.header.share")}
-                  </Button>
-                )}
-                <CharacterDialog />
+              <div className="flex flex-col gap-1">
+                <HeaderNav vertical />
+                <CharacterDialog showLabel />
               </div>
+              {isRoomRoute && (
+                <Button variant="secondary" size="sm" className="mt-auto" onClick={handleShareRoom}>
+                  <Share2 />
+                  {t("dashboard.header.share")}
+                </Button>
+              )}
             </SheetContent>
           </Sheet>
           </div>
